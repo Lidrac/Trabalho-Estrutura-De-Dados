@@ -552,8 +552,111 @@ void mostrarPessoas(NoPessoa **ini) {
     printf("\n-------------------------\n");
 }
 
+void processarFilaTiposDePets(NoFilaTipoPet *fila, NoTipoDePet **iniTipoDePet, NoPet **iniPet) {
+    while(fila) {
+        int op = fila->info.operacao;
+
+        switch(op) {
+            case 1:
+               inserirTipoDePet(iniTipoDePet, fila->info.dadosTipoDePet);
+               break;
+            case 2:
+               removerTipoDePet(iniTipoDePet, iniPet, fila->info.idAlvo);
+               break;
+            case 3:
+               alterarTipoDePet(iniTipoDePet, fila->info.dadosTipoDePet);
+               // Liberar o ponteiro de novosDados
+               if(fila->info.dadosTipoDePet) free(fila->info.dadosTipoDePet);
+               break;
+        }
+
+        NoFilaTipoPet *temp = fila;
+        fila = (*fila).prox;
+        free(temp);
+    }
+}
+
+void processarFilaPessoas(NoFilaPessoa *fila, NoPessoa **iniPes, NoPet **iniPet) {
+    while(fila) {
+        int op = fila->info.operacao;
+
+        switch(op) {
+            case 1:
+               inserirPessoa(iniPes, fila->info.dadosPessoa);
+               break;
+            case 2:
+               removerPessoa(iniPes, iniPet, fila->info.idAlvo);
+               break;
+            case 3:
+                alterarPessoa(iniPes, fila->info.dadosPessoa);
+                // Liberar o ponteiro de novos Dados
+                if(fila->info.dadosPessoa) free(fila->info.dadosPessoa);    
+               break;
+        }
+
+        NoFilaPessoa *temp = fila;
+        fila = (*fila).prox;
+        free(temp);
+    }
+}
+
+void processarFilaPets(NoFilaPet *fila, NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet) {
+    while(fila) {
+        int op = fila->info.operacao;
+
+        switch(op) {
+            case 1:
+               inserirPet(iniPet, iniPes, iniTipoDePet, fila->info.dadosPet);
+               break;
+            case 2:
+               removerPet(iniPet, fila->info.idAlvo);
+               break;
+            case 3:
+               alterarPet(iniPet, iniPes, iniTipoDePet, fila->info.dadosPet);
+               // Liberar o ponteiro de novos dados
+               if(fila->info.dadosPet) free(fila->info.dadosPet);
+               break;
+        }
+
+        NoFilaPet *temp = fila;
+        fila = (*fila).prox;
+        free(temp);
+    }
+}
 
 int main() {
+    NoPessoa *listaPessoas = NULL;
+    NoPet *listaPets = NULL;
+    NoTipoDePet *listaTiposDePet = NULL;
 
+    NoFilaPessoa *filaDeComandosDePessoas = NULL;
+    NoFilaPet *filaDeComandosDePets = NULL;
+    NoFilaTipoPet *filaDeComandosDeTiposDePets = NULL;
+
+    pegarPessoasArquivo(&listaPessoas, "ArquivosBinarios/pessoas.bin");
+    pegarTiposDePetArquivo(&listaTiposDePet, "ArquivosBinarios/tiposDePet.bin");
+    pegarPetsArquivo(&listaPets, &listaPessoas, &listaTiposDePet, "ArquivosBinarios/pet.bin");
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+
+    processarFilaPessoas(filaDeComandosDePessoas, &listaPessoas, &listaPets);
+    processarFilaTiposDePets(filaDeComandosDeTiposDePets, &listaTiposDePet, &listaPets);
+    processarFilaPets(filaDeComandosDePets, &listaPets, &listaPessoas, &listaTiposDePet);
+
+
+    salvarPessoasNoArquivo(&listaPessoas, "ArquivosBinarios/pessoas.bin");
+    salvarPetsNoArquivo(&listaPets, "ArquivosBinarios/pet.bin" );
+    salvarTiposDePetNoArquivo(&listaTiposDePet, "ArquivosBinarios/tiposDePet.bin");
+
+    finalizar(&listaPessoas, &listaPets, &listaTiposDePet);
     return 0;
 }

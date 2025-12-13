@@ -13,9 +13,14 @@ typedef struct NoTipoDePet {
 
 typedef struct comandoTipoPet {
     int operacao;
-    tipoPet *dadosPet;
+    tipoPet *dadosTipoDePet;
     int idAlvo;
 } comandoTipoPet;
+
+typedef struct NoFilaTipoPet {
+    comandoTipoPet info;
+    struct NoFilaTipoPet *prox;
+} NoFilaTipoPet;
 
 // Compilador, confie em mim, existe uma struct chamada NoPet
 typedef struct NoPet NoPet;
@@ -27,6 +32,7 @@ void alterarTipoDePet(NoTipoDePet **iniTipoDePet, tipoPet *novosDados);
 void finalizarListaDeTiposDePet(NoTipoDePet **iniTipoDePet);
 void pegarTiposDePetArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo);
 void salvarTiposDePetNoArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo);
+void processarFilaTiposDePets(NoFilaTipoPet *fila, NoTipoDePet **iniTipoDePet, NoPet **iniPet);
 
 
 

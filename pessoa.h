@@ -22,6 +22,11 @@ typedef struct comandoPessoa {
     int idAlvo;
 } comandoPessoa;
 
+typedef struct NoFilaPessoa {
+    comandoPessoa info;
+    struct NoFilaPessoa *prox;
+} NoFilaPessoa;
+
 // Compilador, confie em mim, existe uma struct chamada NoPet
 typedef struct NoPet NoPet;
 
@@ -33,5 +38,6 @@ NoPessoa *buscarPessoaPorCodigo(NoPessoa **iniPes, int codigo);
 void alterarPessoa(NoPessoa **iniPes, pessoa *novosDados);
 void finalizarListaDePessoas(NoPessoa **iniPes);
 void pegarPessoasArquivo(NoPessoa **iniPes, char *nomeArquivo);
+void processarFilaPessoas(NoFilaPessoa *fila, NoPessoa **iniPes, NoPet **iniPet);
 
 #endif
