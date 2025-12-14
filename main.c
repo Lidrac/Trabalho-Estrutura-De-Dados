@@ -35,6 +35,21 @@ void inserirPessoa(NoPessoa **iniPes, pessoa *p) {
     }
     (*elementoInserido).prox = NULL;
     (*elementoInserido).p = p;
+
+
+    // Alteração no arquivo
+    p->ativo = 1;
+
+    // ab para escrever sempre no final do arquivo
+    FILE *arquivo = fopen("ArquivosBinarios/pessoas.bin", "ab");
+
+    if(arquivo) {
+        p->posicaoNoArquivo = ftell(arquivo);
+
+        fwrite(p, sizeof(pessoa), 1, arquivo);
+
+        fclose(arquivo);
+    }
 }
 
 void removerPessoa(NoPessoa **iniPes, NoPet **iniPet ,int codigo) {
@@ -79,6 +94,21 @@ void removerPessoa(NoPessoa **iniPes, NoPet **iniPet ,int codigo) {
 
     // A condição acima pode ser feita com o bloco de if para fora do if else
 
+    // Alteração do Arquivo
+
+    // Mudar o campo ativo no arquivo
+    pessoaAlvo->p->ativo = 0;
+
+    FILE *arquivo = fopen("ArquivosBinarios/pessoas.bin", "r+b");
+
+    if(arquivo) {
+        fseek(arquivo, pessoaAlvo->p->posicaoNoArquivo, SEEK_SET);
+
+        // Sobescreve oo registro do arquivo antigo
+        fwrite(pessoaAlvo->p, sizeof(pessoa), 1, arquivo);
+        fclose(arquivo);
+    }
+
     free((*pessoaAlvo).p);
     free(pessoaAlvo);
 
@@ -88,6 +118,9 @@ NoPessoa *buscarPessoaPorCodigo(NoPessoa **iniPes, int codigo) {
     NoPessoa *aux = *iniPes;
 
     while(aux != NULL) {
+        if(aux->p->ativo == 0) {
+            continue;
+        }
         if((*aux).p->codigo == codigo) {
             return aux;
         }
@@ -108,6 +141,19 @@ void alterarPessoa(NoPessoa **iniPes, pessoa *novosDados) {
     strcpy(alvoPessoa->p->endereco, novosDados->endereco);
     strcpy(alvoPessoa->p->dataNascimento, novosDados->dataNascimento);
     alvoPessoa->p->fone = novosDados->fone;
+
+    // Alteração do arquivo
+    FILE *arquivo = fopen("ArquivosBinarios/pessoas.bin", "r+b");
+
+    if(arquivo) {
+        fseek(arquivo, alvoPessoa->p->posicaoNoArquivo, SEEK_SET);
+
+        // Sobescreve o arquivo com os dados já alterados
+        fwrite(alvoPessoa->p, sizeof(pessoa), 1, arquivo);
+
+        fclose(arquivo);
+    }
+    
 }
 
 void finalizarListaDePessoas(NoPessoa **iniPes) {
@@ -128,18 +174,23 @@ void finalizarListaDePessoas(NoPessoa **iniPes) {
 
 void pegarPessoasArquivo(NoPessoa **iniPes, char *nomeArquivo) {
     // Abre o arquivo para leitura
-    FILE *arquivo = fopen(nomeArquivo, "rb");
+    FILE *arquivo = fopen(nomeArquivo, "r+b");
     
     if(!arquivo) {
-        printf("\nArquivo não existe\n");
+        arquivo = fopen(nomeArquivo, "wb");
+        fclose(arquivo);
+        arquivo = fopen(nomeArquivo, "r+b");
         return;
     }
+
     
     // Garantir que o ponteiro está no início do arquivo
     fseek(arquivo, 0, SEEK_SET);
     
     // Para armazenar os valores intermediários
     pessoa temp;
+
+    long posicaoAtual = ftell(arquivo);
     
     // Se for diferente de 1 , é porque ele chegou ao final do arquivo 
     while(fread(&temp, sizeof(pessoa), 1, arquivo) == 1) {
@@ -147,14 +198,27 @@ void pegarPessoasArquivo(NoPessoa **iniPes, char *nomeArquivo) {
         // Alocando memória para o ponteiro de pessoa
         pessoa *novo = (pessoa *)malloc(sizeof(pessoa));
         *novo = temp;
+
+        // Para guardar a posição que está no arquivo antes do fread
+        (*novo).posicaoNoArquivo = posicaoAtual;
+
+        if((*novo).ativo == 1) {
+            // Inserindo na lista duplamente encadeada de pessoas
+            inserirPessoa(iniPes, novo);
+        } else {
+            // Liberar a memória do arquivo caso ativo == 0
+            free(novo);
+        }
+
+        // Atualiza para a próxima volta
+        posicaoAtual = ftell(arquivo);
         
-        // Inserindo na lista duplamente encadeada de pessoas
-        inserirPessoa(iniPes, novo);
     }
     
     fclose(arquivo);
 }
 
+// Funciona como um compactador para eliminar os ativos = 0
 void salvarPessoasNoArquivo(NoPessoa **iniPes, char *nomeArquivo) {
     FILE *arquivo = fopen(nomeArquivo, "wb");
     
@@ -165,8 +229,9 @@ void salvarPessoasNoArquivo(NoPessoa **iniPes, char *nomeArquivo) {
     fseek(arquivo, 0, SEEK_SET);
     
     while(aux != NULL) {
-        fwrite((*aux).p, sizeof(pessoa), 1, arquivo);
-        
+        if(aux->p->ativo == 1) {
+            fwrite((*aux).p, sizeof(pessoa), 1, arquivo);
+        }
         aux = (*aux).prox;
     }
     
@@ -214,6 +279,21 @@ void inserirPet(NoPet **iniPet,NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, pe
     }
     (*elementoInserido).prox = NULL;
     (*elementoInserido).p = p;
+
+    // Alteração no arquivo
+
+    p->ativo = 1;
+
+    // ab para escrever sempre no final do arquivo
+    FILE *arquivo = fopen("ArquivosBinarios/pet.bin", "ab");
+
+    if(arquivo) {
+        p->posicaoNoArquivo = ftell(arquivo);
+
+        fwrite(p, sizeof(pet), 1 , arquivo);
+
+        fclose(arquivo);
+    }
 }
 
 void removerPet(NoPet **iniPet, int codigo) {
@@ -246,16 +326,33 @@ void removerPet(NoPet **iniPet, int codigo) {
 
     // A condição acima pode ser feita com o bloco if fora do if else
 
+    // Alteração do arquivo
+
+    // Mudar o campo de ativo
+    petAlvo->p->ativo = 0;
+
+    FILE *arquivo = fopen("ArquivosBinarios/pet.bin", "r+b");
+
+    if(arquivo) {
+        fseek(arquivo, petAlvo->p->posicaoNoArquivo, SEEK_SET);
+
+        // Sobescreve os dados, para ativo = 0;
+        fwrite(petAlvo->p, sizeof(pet), 1, arquivo);
+        fclose(arquivo);
+    }
+
     free((*petAlvo).p);
     free(petAlvo);
 
-    
 }
 
 NoPet *buscarPetPorCodigo(NoPet **iniPet, int codigo) {
     NoPet *aux = *iniPet;
 
     while(aux != NULL) {
+        if(aux->p->ativo == 0) {
+            continue;
+        }
         if((*aux).p->codigo == codigo) {
             return aux;
         }
@@ -294,6 +391,20 @@ void alterarPet(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, p
     alvoPet->p->codigo_pes = novosDados->codigo_pes;
     alvoPet->p->codigo_tipo = novosDados->codigo_tipo;
     strcpy(alvoPet->p->nome, novosDados->nome);
+
+    // Alteração no arquivo
+
+    FILE *arquivo = fopen("ArquivosBinarios/pet.bin", "r+b");
+
+    if(arquivo) {
+        fseek(arquivo, alvoPet->p->posicaoNoArquivo, SEEK_SET);
+
+        // Sobescreve o arquivo com os dados já alterados
+        fwrite(alvoPet->p, sizeof(pet), 1, arquivo);
+
+        fclose(arquivo);
+    }
+
 }
 
 void finalizarListaDePets(NoPet **iniPet) {
@@ -317,7 +428,9 @@ void pegarPetsArquivo(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDe
     FILE *arquivo = fopen(nomeArquivo, "rb");
     
     if(!arquivo) {
-        printf("\nArquivo não existe\n");
+        arquivo = fopen(nomeArquivo, "wb");
+        fclose(arquivo);
+        arquivo = fopen(nomeArquivo, "r+b");
         return;
     }
     
@@ -326,6 +439,8 @@ void pegarPetsArquivo(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDe
     
     // Para armazenar os valores intermediários
     pet temp;
+
+    long posicaoAtual = ftell(arquivo);
     
     // Se for diferente de 1 , é porque ele chegou ao final do arquivo 
     while(fread(&temp, sizeof(pet), 1, arquivo) == 1) {
@@ -333,9 +448,20 @@ void pegarPetsArquivo(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDe
         // Alocando memória para o ponteiro de pet
         pet *novo = (pet *)malloc(sizeof(pet));
         *novo = temp;
-        
-        // Inserindo na lista duplamente encadeada de pets
-        inserirPet(iniPet, iniPes, iniTipoDePet, novo);
+
+        // Para guardar a posição que está no arquivo antes do fread
+        (*novo).posicaoNoArquivo = posicaoAtual;
+
+        if((*novo).ativo == 1) {
+            // Inserindo na lista duplamente encadeada de pets
+            inserirPet(iniPet, iniPes, iniTipoDePet, novo);
+        } else {
+            // Liberar a memória do arquivo caso ativo == 0
+            free(novo);
+        }
+
+        // Atualiza para a próxima volta
+        posicaoAtual = ftell(arquivo);
     }
     
     fclose(arquivo);
@@ -351,7 +477,9 @@ void salvarPetsNoArquivo(NoPet **iniPet, char *nomeArquivo) {
     fseek(arquivo, 0, SEEK_SET);
     
     while(aux != NULL) {
-        fwrite((*aux).p, sizeof(pet), 1, arquivo);
+        if(aux->p->ativo == 1) {
+            fwrite((*aux).p, sizeof(pet), 1, arquivo);
+        }
         
         aux = (*aux).prox;
     }
@@ -390,6 +518,21 @@ void inserirTipoDePet(NoTipoDePet **iniTipoDePet, tipoPet *p) {
     }
     (*elementoInserido).prox = NULL;
     (*elementoInserido).p = p;
+
+    // Alteração no arquivo
+
+    p->ativo = 1;
+
+    // ab para escrever sempre no final do arquivo
+    FILE *arquivo = fopen("ArquivosBinarios/tiposDePet.bin", "ab");
+
+    if(arquivo) {
+        p->posicaoNoArquivo = ftell(arquivo);
+
+        fwrite(p, sizeof(tipoPet), 1 , arquivo);
+
+        fclose(arquivo);
+    }
 }
 
 void removerTipoDePet(NoTipoDePet **iniTipoDePet, NoPet **iniPet, int codigo) {
@@ -436,6 +579,21 @@ void removerTipoDePet(NoTipoDePet **iniTipoDePet, NoPet **iniPet, int codigo) {
         }
     }
 
+    // Alteração do arquivo
+
+    // Mudar o campo de ativo
+    alvoTipoDePet->p->ativo = 0;
+
+    FILE *arquivo = fopen("ArquivosBinarios/tiposDePet.bin", "r+b");
+
+    if(arquivo) {
+        fseek(arquivo, alvoTipoDePet->p->posicaoNoArquivo, SEEK_SET);
+
+        // Sobescreve os dados, para ativo = 0;
+        fwrite(alvoTipoDePet->p, sizeof(tipoPet), 1, arquivo);
+        fclose(arquivo);
+    }
+
     free((*alvoTipoDePet).p);
     free(alvoTipoDePet);
 }
@@ -444,6 +602,9 @@ NoTipoDePet *buscarTipoDePetPorCodigo(NoTipoDePet **iniTipoDePet, int codigo) {
     NoTipoDePet *aux = *iniTipoDePet;
 
     while(aux != NULL) {
+        if(aux->p->ativo == 0) {
+            continue;
+        }
         if((*aux).p->codigo == codigo) {
             return aux;
         }
@@ -462,6 +623,19 @@ void alterarTipoDePet(NoTipoDePet **iniTipoDePet, tipoPet *novosDados) {
     }
 
     strcpy(alvoTipoDePet->p->nome, novosDados->nome);
+
+    // Alteração no arquivo
+
+    FILE *arquivo = fopen("ArquivosBinarios/tiposDePet.bin", "r+b");
+
+    if(arquivo) {
+        fseek(arquivo, alvoTipoDePet->p->posicaoNoArquivo, SEEK_SET);
+
+        // Sobescreve o arquivo com os dados já alterados
+        fwrite(alvoTipoDePet->p, sizeof(tipoPet), 1, arquivo);
+
+        fclose(arquivo);
+    }
 }
 
 void finalizarListaDeTiposDePet(NoTipoDePet **iniTipoDePet) {
@@ -485,7 +659,9 @@ void pegarTiposDePetArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo) {
     FILE *arquivo = fopen(nomeArquivo, "rb");
     
     if(!arquivo) {
-        printf("\nArquivo não existe\n");
+        arquivo = fopen(nomeArquivo, "wb");
+        fclose(arquivo);
+        arquivo = fopen(nomeArquivo, "r+b");
         return;
     }
     
@@ -494,6 +670,8 @@ void pegarTiposDePetArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo) {
     
     // Para armazenar os valores intermediários
     tipoPet temp;
+
+    long posicaoAtual = ftell(arquivo);
     
     // Se for diferente de 1 , é porque ele chegou ao final do arquivo 
     while(fread(&temp, sizeof(tipoPet), 1, arquivo) == 1) {
@@ -502,8 +680,19 @@ void pegarTiposDePetArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo) {
         tipoPet *novo = (tipoPet *)malloc(sizeof(tipoPet));
         *novo = temp;
         
-        // Inserindo na lista duplamente encadeada de pets
-        inserirTipoDePet(iniTipoDePet, novo);
+        // Para guardar a posição que está no arquivo antes do fread
+        (*novo).posicaoNoArquivo = posicaoAtual;
+
+        if((*novo).ativo == 1) {
+            // Inserindo na lista duplamente encadeada de tipos de pet
+            inserirTipoDePet(iniTipoDePet, novo);
+        } else {
+            // Liberar a memória do arquivo caso ativo == 0
+            free(novo);
+        }
+
+        // Atualiza para a próxima volta
+        posicaoAtual = ftell(arquivo);
     }
     
     fclose(arquivo);
@@ -519,7 +708,9 @@ void salvarTiposDePetNoArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo) {
     fseek(arquivo, 0, SEEK_SET);
 
     while(aux != NULL) {
-        fwrite((*aux).p, sizeof(tipoPet), 1, arquivo);
+        if(aux->p->ativo == 1) {
+            fwrite((*aux).p, sizeof(tipoPet), 1, arquivo);
+        }
 
         aux = (*aux).prox;
     }

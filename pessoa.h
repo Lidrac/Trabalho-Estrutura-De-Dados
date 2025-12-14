@@ -1,13 +1,14 @@
 #ifndef PESSOA_H
 #define PESSOA_H
 
-
 typedef struct {
     int codigo;
     char nome[50];
     int fone;
     char endereco[50];
     char dataNascimento[30];
+    int ativo;
+    long posicaoNoArquivo;
 } pessoa;
 
 typedef struct NoPessoa {

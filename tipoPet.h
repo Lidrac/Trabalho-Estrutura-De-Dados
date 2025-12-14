@@ -1,8 +1,11 @@
 #ifndef TIPO_PET_H
+#define TIPO_PET_H
 
 typedef struct {
     int codigo;
     char nome[50];
+    int ativo;
+    long posicaoNoArquivo;
 } tipoPet;
 
 typedef struct NoTipoDePet {
