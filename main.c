@@ -4,6 +4,8 @@
 #include "pessoa.h"
 #include "pet.h"
 #include "tipoPet.h"
+#include "comando.h"
+#include "validador.h"
 
 // FUNÇÕES PARA PESSOAS
 
@@ -118,12 +120,11 @@ NoPessoa *buscarPessoaPorCodigo(NoPessoa **iniPes, int codigo) {
     NoPessoa *aux = *iniPes;
 
     while(aux != NULL) {
-        if(aux->p->ativo == 0) {
-            continue;
-        }
-        if((*aux).p->codigo == codigo) {
+        if( aux->p->ativo == 1 && (*aux).p->codigo == codigo) {
             return aux;
         }
+
+        aux = (*aux).prox;
     }
 
     return NULL;
@@ -177,9 +178,6 @@ void pegarPessoasArquivo(NoPessoa **iniPes, char *nomeArquivo) {
     FILE *arquivo = fopen(nomeArquivo, "r+b");
     
     if(!arquivo) {
-        arquivo = fopen(nomeArquivo, "wb");
-        fclose(arquivo);
-        arquivo = fopen(nomeArquivo, "r+b");
         return;
     }
 
@@ -192,25 +190,32 @@ void pegarPessoasArquivo(NoPessoa **iniPes, char *nomeArquivo) {
 
     long posicaoAtual = ftell(arquivo);
     
+    *iniPes = NULL;
+
     // Se for diferente de 1 , é porque ele chegou ao final do arquivo 
     while(fread(&temp, sizeof(pessoa), 1, arquivo) == 1) {
         
-        // Alocando memória para o ponteiro de pessoa
-        pessoa *novo = (pessoa *)malloc(sizeof(pessoa));
-        *novo = temp;
+        if(temp.ativo == 1) {
+            NoPessoa *novo = (NoPessoa *)malloc(sizeof(NoPessoa));
+            pessoa *p = (pessoa*)malloc(sizeof(pessoa));
+            *p = temp;
+            p->posicaoNoArquivo = posicaoAtual;
 
-        // Para guardar a posição que está no arquivo antes do fread
-        (*novo).posicaoNoArquivo = posicaoAtual;
-
-        if((*novo).ativo == 1) {
-            // Inserindo na lista duplamente encadeada de pessoas
-            inserirPessoa(iniPes, novo);
-        } else {
-            // Liberar a memória do arquivo caso ativo == 0
-            free(novo);
+            novo->p = p;
+            novo->prox = NULL;
+            novo->ant = NULL;
+            
+            if(*iniPes == NULL) {
+                *iniPes = novo;
+            } else {
+                NoPessoa *aux = *iniPes;
+                while(aux->prox) {
+                    aux = aux->prox;
+                }
+                aux->prox = novo;
+                novo->ant = aux;
+            }
         }
-
-        // Atualiza para a próxima volta
         posicaoAtual = ftell(arquivo);
         
     }
@@ -238,6 +243,21 @@ void salvarPessoasNoArquivo(NoPessoa **iniPes, char *nomeArquivo) {
     fclose(arquivo);
 }
 
+void mostrarPessoas(NoPessoa **iniPes) {
+    NoPessoa *aux = *iniPes;
+    printf("\n-------------------------\n");
+    while(aux) {
+        printf("Código: %d\n", (*aux).p->codigo);
+        printf("nome: %s\n", (*aux).p->nome);
+        printf("fone: %d\n", (*aux).p->fone);
+        printf("endereco: %s\n", (*aux).p->endereco);
+        printf("data de nascimento: %s\n", (*aux).p->dataNascimento);
+
+        aux = (*aux).prox;
+    }
+    printf("\n-------------------------\n");
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // FUNÇÕES PARA PET
@@ -251,7 +271,7 @@ void inserirPet(NoPet **iniPet,NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, pe
 
 
     // Verificar se ele tem dono e se o tipo de pet já está cadastrado
-    if(buscarPessoaPorCodigo(iniPes, p->codigo_pes) && buscarTipoDePetPorCodigo(iniTipoDePet, p->codigo_tipo)) {
+    if(!buscarPessoaPorCodigo(iniPes, p->codigo_pes) || !buscarTipoDePetPorCodigo(iniTipoDePet, p->codigo_tipo)) {
         printf("\n Não é possível inserir o Pet, ou o Dono ou o seu tipo não estão no sistema");
         return;
     };
@@ -350,10 +370,7 @@ NoPet *buscarPetPorCodigo(NoPet **iniPet, int codigo) {
     NoPet *aux = *iniPet;
 
     while(aux != NULL) {
-        if(aux->p->ativo == 0) {
-            continue;
-        }
-        if((*aux).p->codigo == codigo) {
+        if( aux->p->ativo == 1 && (*aux).p->codigo == codigo) {
             return aux;
         }
         aux = (*aux).prox;
@@ -428,9 +445,6 @@ void pegarPetsArquivo(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDe
     FILE *arquivo = fopen(nomeArquivo, "rb");
     
     if(!arquivo) {
-        arquivo = fopen(nomeArquivo, "wb");
-        fclose(arquivo);
-        arquivo = fopen(nomeArquivo, "r+b");
         return;
     }
     
@@ -441,26 +455,32 @@ void pegarPetsArquivo(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDe
     pet temp;
 
     long posicaoAtual = ftell(arquivo);
+
+    *iniPet = NULL;
     
     // Se for diferente de 1 , é porque ele chegou ao final do arquivo 
-    while(fread(&temp, sizeof(pet), 1, arquivo) == 1) {
-        
-        // Alocando memória para o ponteiro de pet
-        pet *novo = (pet *)malloc(sizeof(pet));
-        *novo = temp;
+    while(fread(&temp, sizeof(pet), 1, arquivo) == 1) {      
+        if(temp.ativo == 1) {
+            NoPet *novo = (NoPet *)malloc(sizeof(NoPet));
+            pet *p = (pet*)malloc(sizeof(pet));
+            *p = temp;
+            p->posicaoNoArquivo = posicaoAtual;
 
-        // Para guardar a posição que está no arquivo antes do fread
-        (*novo).posicaoNoArquivo = posicaoAtual;
+            novo->p = p;
+            novo->prox = NULL;
+            novo->ant = NULL;
 
-        if((*novo).ativo == 1) {
-            // Inserindo na lista duplamente encadeada de pets
-            inserirPet(iniPet, iniPes, iniTipoDePet, novo);
-        } else {
-            // Liberar a memória do arquivo caso ativo == 0
-            free(novo);
+            if(*iniPet == NULL) {
+                *iniPet = novo;
+            } else {
+                NoPet *aux = *iniPet;
+                while(aux->prox) {
+                    aux = aux->prox;
+                }
+                aux->prox = novo;
+                novo->ant = aux;
+            }
         }
-
-        // Atualiza para a próxima volta
         posicaoAtual = ftell(arquivo);
     }
     
@@ -485,6 +505,20 @@ void salvarPetsNoArquivo(NoPet **iniPet, char *nomeArquivo) {
     }
     
     fclose(arquivo);
+}
+
+void mostrarPets(NoPet **iniPet) {
+    NoPet *aux = *iniPet;
+    printf("\n-------------------------\n");
+    while(aux) {
+        printf("Código: %d\n", (*aux).p->codigo);
+        printf("Código do dono: %s\n", (*aux).p->codigo_pes);
+        printf("nome: %d\n", (*aux).p->nome);
+        printf("Código do tipo: %s\n", (*aux).p->codigo_tipo);
+
+        aux = (*aux).prox;
+    }
+    printf("\n-------------------------\n");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -602,10 +636,7 @@ NoTipoDePet *buscarTipoDePetPorCodigo(NoTipoDePet **iniTipoDePet, int codigo) {
     NoTipoDePet *aux = *iniTipoDePet;
 
     while(aux != NULL) {
-        if(aux->p->ativo == 0) {
-            continue;
-        }
-        if((*aux).p->codigo == codigo) {
+        if( aux->p->ativo == 1 && (*aux).p->codigo == codigo) {
             return aux;
         }
         aux = (*aux).prox;
@@ -659,9 +690,6 @@ void pegarTiposDePetArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo) {
     FILE *arquivo = fopen(nomeArquivo, "rb");
     
     if(!arquivo) {
-        arquivo = fopen(nomeArquivo, "wb");
-        fclose(arquivo);
-        arquivo = fopen(nomeArquivo, "r+b");
         return;
     }
     
@@ -672,26 +700,33 @@ void pegarTiposDePetArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo) {
     tipoPet temp;
 
     long posicaoAtual = ftell(arquivo);
+
+    *iniTipoDePet = NULL;
     
     // Se for diferente de 1 , é porque ele chegou ao final do arquivo 
     while(fread(&temp, sizeof(tipoPet), 1, arquivo) == 1) {
-        
-        // Alocando memória para o ponteiro de Tipo de Pet
-        tipoPet *novo = (tipoPet *)malloc(sizeof(tipoPet));
-        *novo = temp;
-        
-        // Para guardar a posição que está no arquivo antes do fread
-        (*novo).posicaoNoArquivo = posicaoAtual;
 
-        if((*novo).ativo == 1) {
-            // Inserindo na lista duplamente encadeada de tipos de pet
-            inserirTipoDePet(iniTipoDePet, novo);
-        } else {
-            // Liberar a memória do arquivo caso ativo == 0
-            free(novo);
+        if(temp.ativo == 1) {
+            NoTipoDePet *novo = (NoTipoDePet *)malloc(sizeof(NoTipoDePet));
+            tipoPet *p = (tipoPet*)malloc(sizeof(tipoPet));
+            *p = temp;
+            p->posicaoNoArquivo = posicaoAtual;
+
+            novo->p = p;
+            novo->prox = NULL;
+            novo->ant = NULL;
+
+            if(*iniTipoDePet == NULL) {
+                *iniTipoDePet = novo;
+            } else {
+                NoTipoDePet *aux = *iniTipoDePet;
+                while(aux && aux->prox) {
+                    aux = aux->prox;
+                }
+                aux->prox = novo;
+                novo->ant = aux;
+            }
         }
-
-        // Atualiza para a próxima volta
         posicaoAtual = ftell(arquivo);
     }
     
@@ -718,6 +753,17 @@ void salvarTiposDePetNoArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo) {
     fclose(arquivo);
 }
 
+void mostrarTiposDePet(NoTipoDePet **iniTipoDePet) {
+    NoTipoDePet *aux = *iniTipoDePet;
+    printf("\n-------------------------\n");
+    while(aux) {
+        printf("Código: %d\n", (*aux).p->codigo);
+        printf("nome: %s\n", (*aux).p->nome);
+
+        aux = (*aux).prox;
+    }
+    printf("\n-------------------------\n");
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FUNÇÕES GERAIS
@@ -726,21 +772,6 @@ void finalizar(NoPessoa **iniPes, NoPet **iniPet, NoTipoDePet **iniTipoDePet) {
     finalizarListaDePessoas(iniPes);
     finalizarListaDePets(iniPet);
     finalizarListaDeTiposDePet(iniTipoDePet);
-}
-
-void mostrarPessoas(NoPessoa **ini) {
-    NoPessoa *aux = *ini;
-    printf("\n-------------------------\n");
-    while(aux) {
-        printf("%d\n", (*aux).p->codigo);
-        printf("%s\n", (*aux).p->nome);
-        printf("%d\n", (*aux).p->fone);
-        printf("%s\n", (*aux).p->endereco);
-        printf("%s\n", (*aux).p->dataNascimento);
-
-        aux = (*aux).prox;
-    }
-    printf("\n-------------------------\n");
 }
 
 void processarFilaTiposDePets(NoFilaTipoPet *fila, NoTipoDePet **iniTipoDePet, NoPet **iniPet) {
@@ -815,7 +846,65 @@ void processarFilaPets(NoFilaPet *fila, NoPet **iniPet, NoPessoa **iniPes, NoTip
     }
 }
 
+void adicionarComandoNoTXT() {
+    char comando[300];
+    fflush(stdin); 
+    printf("\nDigite o novo comando SQL:\n> ");
+    fgets(comando, 300, stdin);
+    comando[strcspn(comando, "\n")] = 0;
+
+    FILE *arq = fopen("comandos.txt", "a");
+    if (!arq) return;
+
+    fprintf(arq, "\n%s", comando);
+    
+    fclose(arq);
+    printf("[SUCESSO] Comando gravado.\n");
+}
+
+void processarNovosComandos(long *cursorTXT, NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos) {
+    
+    // 1. Cria fila vazia
+    NoFilaPessoa *filaPes = NULL;
+    NoFilaPet *filaPet = NULL;
+    NoFilaTipoPet *filaTipo = NULL;
+    Fila *filaBruta = criar_fila();
+
+    // 2. Lê APENAS O QUE É NOVO (usando o cursor)
+    ler_arquivo(&filaBruta, "comandos.txt", cursorTXT);
+
+    if (filaBruta->ini == NULL) {
+        printf("\n[INFO] Nao ha novos comandos no arquivo para processar.\n");
+    } else {
+        printf("\n[SISTEMA] Processando %d novos comandos...\n", filaBruta->tam);
+        
+        // 3. Distribui e Executa (usando inserirPessoa, inserirPet...)
+        DistribuirComandos(filaBruta, &filaPes, &filaPet, &filaTipo);
+        
+        processarFilaPessoas(filaPes, listaPessoas, listaPets);
+        processarFilaTiposDePets(filaTipo, listaTipos, listaPets);
+        processarFilaPets(filaPet, listaPets, listaPessoas, listaTipos);
+
+        // O salvamento no binário já acontece dentro das funções inserir...
+        printf("[SUCESSO] Novos comandos executados!\n");
+    }
+    
+    free(filaBruta);
+}
+
+void exibir(NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos) {
+    printf("\n=== BANCO DE DADOS ATUAL ===\n");
+    mostrarPessoas(listaPessoas);
+    printf("\n");
+    mostrarTiposDePet(listaTipos);
+    printf("\n");
+    mostrarPets(listaPets);
+    printf("============================\n");
+    system("pause");
+}
+
 int main() {
+
     NoPessoa *listaPessoas = NULL;
     NoPet *listaPets = NULL;
     NoTipoDePet *listaTiposDePet = NULL;
@@ -824,30 +913,40 @@ int main() {
     NoFilaPet *filaDeComandosDePets = NULL;
     NoFilaTipoPet *filaDeComandosDeTiposDePets = NULL;
 
+    long cursorTXT = 0;
+
     pegarPessoasArquivo(&listaPessoas, "ArquivosBinarios/pessoas.bin");
     pegarTiposDePetArquivo(&listaTiposDePet, "ArquivosBinarios/tiposDePet.bin");
     pegarPetsArquivo(&listaPets, &listaPessoas, &listaTiposDePet, "ArquivosBinarios/pet.bin");
 
 
-    ////////////////////////////////////////////////////////////////////////////////
+    int opcao = 0;
+    do {
+        system("cls");
+        printf("\n=== MENU PET SHOP ===\n");
+        printf("1. Ver Dados\n");
+        printf("2. Digitar Novo Comando\n");
+        printf("3. Processar Novos Comandos\n");
+        printf("0. Sair\n");
+        printf("Escolha: ");
+        scanf("%d", &opcao);
 
-
-
-
-
-
-
-    ////////////////////////////////////////////////////////////////////////////////
-
-    processarFilaPessoas(filaDeComandosDePessoas, &listaPessoas, &listaPets);
-    processarFilaTiposDePets(filaDeComandosDeTiposDePets, &listaTiposDePet, &listaPets);
-    processarFilaPets(filaDeComandosDePets, &listaPets, &listaPessoas, &listaTiposDePet);
-
-
-    salvarPessoasNoArquivo(&listaPessoas, "ArquivosBinarios/pessoas.bin");
-    salvarPetsNoArquivo(&listaPets, "ArquivosBinarios/pet.bin" );
-    salvarTiposDePetNoArquivo(&listaTiposDePet, "ArquivosBinarios/tiposDePet.bin");
+        switch(opcao) {
+            case 1:
+                exibir(&listaPessoas, &listaPets, &listaTiposDePet);
+                break;
+            case 2:
+                adicionarComandoNoTXT();
+                break;
+            case 3:
+                // Passamos o endereço do cursor para ele atualizar
+                processarNovosComandos(&cursorTXT, &listaPessoas, &listaPets, &listaTiposDePet);
+                system("pause");
+                break;
+        }
+    } while(opcao != 0);
 
     finalizar(&listaPessoas, &listaPets, &listaTiposDePet);
+
     return 0;
 }
