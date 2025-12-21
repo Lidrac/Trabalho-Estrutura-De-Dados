@@ -53,6 +53,40 @@ int extrair_id_where(char *linha) {
     return -1;
 }
 
+char* extrair_campo(char **cursor){
+    char *inicio = *cursor;
+
+    // pula espaços em branco
+    while(*inicio && (*inicio == ',' || *inicio == ' ' || *inicio == '\t')){
+        inicio++;
+    }
+
+    if(*inicio == '\0' || *inicio == ')'){
+        return NULL;
+    }
+    int dentro_aspas = 0;
+    char *atual = inicio;
+
+    while (*atual != '\0'){
+        if(*atual == '\''){
+            dentro_aspas = !dentro_aspas;
+        }
+        else if (!dentro_aspas && (*atual == ',' || *atual == ')')){
+            if(*atual == ')'){
+                *atual = '\0';
+                *cursor = atual;
+            } else {
+                *atual = '\0';
+                *cursor = atual + 1;
+            }
+            return trim(inicio);
+        }
+        atual++;
+    }
+    *cursor = atual;
+    return trim(inicio);
+}
+
 // Função pra remover aspas, por que a atoi não remove
 int atoi_limpo(char *str) {
     char temp[50];
@@ -204,10 +238,12 @@ int processar_pessoa(char *linha, int operacao, NoFilaPessoa **fila) {
         char *valStart = strchr(ptrValues, '(');
         if(!valStart) return 0;
 
-        char *val = strtok(valStart + 1, ",)\t\n\r;");
+        char *cursor_atual = valStart + 1; 
+        char *val;
         
-        while (val) {
-            char *limpo = trim(val);
+        while ((val = extrair_campo(&cursor_atual)) != NULL) {
+            char limpo[300];
+            limpar_string(limpo, val);
             switch(contador) {
                 case 0: cmd.dadosPessoa->codigo = atoi_limpo(limpo); break;
                 case 1: limpar_string(cmd.dadosPessoa->nome, limpo); break;
@@ -215,7 +251,6 @@ int processar_pessoa(char *linha, int operacao, NoFilaPessoa **fila) {
                 case 3: limpar_string(cmd.dadosPessoa->endereco, limpo); break;
                 case 4: limpar_string(cmd.dadosPessoa->dataNascimento, limpo); break;
             }
-            val = strtok(NULL, ",)\t\n\r;");
             contador++;
         }
 
@@ -275,17 +310,17 @@ int processar_pet(char *linha, int operacao, NoFilaPet **fila) {
         char *valStart = strchr(ptrValues, '(');
         if(!valStart) return 0;
 
-        char *val = strtok(valStart + 1, ",)\t\n\r;");
-        
-        while(val) {
-            char *limpo = trim(val);
+        char *cursor_atual = valStart + 1; 
+        char *val;
+        while ( (val = extrair_campo(&cursor_atual)) != NULL ) {
+            char limpo[300]; 
+            limpar_string(limpo, val);
             switch(contador) {
                 case 0: cmd.dadosPet->codigo = atoi_limpo(limpo); break;
                 case 1: cmd.dadosPet->codigo_pes = atoi_limpo(limpo); break;
                 case 2: limpar_string(cmd.dadosPet->nome, limpo); break;
                 case 3: cmd.dadosPet->codigo_tipo = atoi_limpo(limpo); break;
             }
-            val = strtok(NULL, ",)\t\n\r;");
             contador++;
         }
 

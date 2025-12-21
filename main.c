@@ -512,9 +512,9 @@ void mostrarPets(NoPet **iniPet) {
     printf("\n-------------------------\n");
     while(aux) {
         printf("Código: %d\n", (*aux).p->codigo);
-        printf("Código do dono: %s\n", (*aux).p->codigo_pes);
-        printf("nome: %d\n", (*aux).p->nome);
-        printf("Código do tipo: %s\n", (*aux).p->codigo_tipo);
+        printf("Código do dono: %d\n", (*aux).p->codigo_pes);
+        printf("nome: %s\n", (*aux).p->nome);
+        printf("Código do tipo: %d\n", (*aux).p->codigo_tipo);
 
         aux = (*aux).prox;
     }
@@ -904,6 +904,9 @@ void exibir(NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos
 }
 
 int main() {
+
+    system("chcp 65001");
+    system("cls");
 
     NoPessoa *listaPessoas = NULL;
     NoPet *listaPets = NULL;
