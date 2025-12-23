@@ -133,7 +133,7 @@ void removerPessoaPorCriterio(NoPessoa **iniPes, NoPet **iniPet, comandoPessoa c
             } else if (strcasecmp(cmd.tipoFiltragem, "endereco") == 0) {
                 if (strcasecmp(atual->p->endereco, cmd.dadosPessoa->endereco) == 0) deveDeletar = 1;
             } else if (strcasecmp(cmd.tipoFiltragem, "fone") == 0) {
-                if (atual->p->fone == cmd.dadosPessoa->fone) deveDeletar = 1;
+                if (strcasecmp(atual->p->fone, cmd.dadosPessoa->fone) == 0) deveDeletar = 1;
             }
         }
 
@@ -169,7 +169,7 @@ void alterarPessoa(NoPessoa **iniPes, pessoa *novosDados) {
     if(strlen(novosDados->nome) > 0) strcpy(alvoPessoa->p->nome, novosDados->nome);
     if(strlen(novosDados->endereco) > 0) strcpy(alvoPessoa->p->endereco, novosDados->endereco);
     if(strlen(novosDados->dataNascimento) > 0) strcpy(alvoPessoa->p->dataNascimento, novosDados->dataNascimento);
-    if(novosDados->fone != -1) alvoPessoa->p->fone = novosDados->fone;
+    if(strlen(novosDados->fone) > 0) strcpy(alvoPessoa->p->fone, novosDados->fone);
 
     // Alteração do arquivo
     FILE *arquivo = fopen("ArquivosBinarios/pessoas.bin", "r+b");
@@ -202,7 +202,7 @@ void alterarPessoaPorCriterio(NoPessoa **iniPes, NoPet **iniPet, comandoPessoa c
             } else if (strcasecmp(cmd.tipoFiltragem, "endereco") == 0) {
                 if (strcasecmp(atual->p->endereco, cmd.dadosPessoa->endereco) == 0) deveAlterar = 1;
             } else if (strcasecmp(cmd.tipoFiltragem, "fone") == 0) {
-                if (atual->p->fone == cmd.dadosPessoa->fone) deveAlterar = 1;
+                if (strcasecmp(atual->p->fone, cmd.dadosPessoa->fone) == 0) deveAlterar = 1;
             }
         }
 
@@ -221,23 +221,23 @@ void inserirNaArvorePessoa(NoArvorePessoa **raiz, pessoa *p, char *criterioOrden
         (*raiz)->dir = NULL;
     } else {
         int deveIrParaEsquerda = 0;
-        if (strcasecmp(criterioOrdenacao, "nome")) {
+        if (strcasecmp(criterioOrdenacao, "nome") == 0) {
             if (strcasecmp(p->nome, (*raiz)->p->nome) < 0) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "data")) {
+        } else if(strcasecmp(criterioOrdenacao, "data") == 0) {
             if (strcasecmp(p->dataNascimento, (*raiz)->p->dataNascimento)) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "endereco")) {
+        } else if(strcasecmp(criterioOrdenacao, "endereco") == 0) {
             if (strcasecmp(p->endereco, (*raiz)->p->endereco)) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "telefone")) {
-            if (p->fone < (*raiz)->p->fone) {
+        } else if(strcasecmp(criterioOrdenacao, "telefone") == 0) {
+            if (strcasecmp(p->fone, (*raiz)->p->fone)) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "codigo")) {
+        } else if(strcasecmp(criterioOrdenacao, "codigo") == 0) {
             if (p->codigo < (*raiz)->p->codigo) {
                 deveIrParaEsquerda = 1;
             }
@@ -254,7 +254,7 @@ void inserirNaArvorePessoa(NoArvorePessoa **raiz, pessoa *p, char *criterioOrden
 void exibirArvorePessoa(NoArvorePessoa *raiz) {
     if (raiz != NULL) {
         exibirArvorePessoa(raiz->esq);
-        printf("ID: %d | Nome: %s | Fone: %d\n", raiz->p->codigo, raiz->p->nome, raiz->p->fone);
+        printf("ID: %d | Nome: %s | Fone: %s\n", raiz->p->codigo, raiz->p->nome, raiz->p->fone);
         exibirArvorePessoa(raiz->dir);
     }
 }
@@ -280,6 +280,7 @@ void executarSelectPessoa(NoPessoa *lista, comandoPessoa cmd) {
             else if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0 && aux->p->codigo == cmd.dadosPessoa->codigo) match = 1;
             else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0 && strstr(aux->p->nome, cmd.dadosPessoa->nome)) match = 1;
             else if (strcasecmp(cmd.tipoFiltragem, "endereco") == 0 && strstr(aux->p->endereco, cmd.dadosPessoa->endereco)) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "fone") == 0 && strstr(aux->p->fone, cmd.dadosPessoa->fone)) match = 1;
 
             if (match) {
                 // Insere na árvore para ordenar
@@ -387,7 +388,7 @@ void mostrarPessoas(NoPessoa **iniPes) {
     while(aux) {
         printf("Código: %d\n", (*aux).p->codigo);
         printf("nome: %s\n", (*aux).p->nome);
-        printf("fone: %d\n", (*aux).p->fone);
+        printf("fone: %s\n", (*aux).p->fone);
         printf("endereco: %s\n", (*aux).p->endereco);
         printf("data de nascimento: %s\n", (*aux).p->dataNascimento);
 
@@ -622,19 +623,19 @@ void inserirNaArvorePet(NoArvorePet **raiz, pet *p, char *criterioOrdenacao) {
         (*raiz)->dir = NULL;
     } else {
         int deveIrParaEsquerda = 0;
-        if (strcasecmp(criterioOrdenacao, "nome")) {
+        if (strcasecmp(criterioOrdenacao, "nome") == 0) {
             if (strcasecmp(p->nome, (*raiz)->p->nome) < 0) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "codigo")) {
+        } else if(strcasecmp(criterioOrdenacao, "codigo") == 0) {
             if (p->codigo < (*raiz)->p->codigo) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "codigo_pes")) {
+        } else if(strcasecmp(criterioOrdenacao, "codigo_pes") == 0) {
             if (p->codigo_pes < (*raiz)->p->codigo_pes) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "codigo_tipo")) {
+        } else if(strcasecmp(criterioOrdenacao, "codigo_tipo") == 0) {
             if (p->codigo_tipo < (*raiz)->p->codigo_tipo) {
                 deveIrParaEsquerda = 1;
             }
@@ -988,11 +989,11 @@ void inserirNaArvoreTipoPet(NoArvoreTipoDePet **raiz, tipoPet *p, char *criterio
         (*raiz)->dir = NULL;
     } else {
         int deveIrParaEsquerda = 0;
-        if (strcasecmp(criterioOrdenacao, "nome")) {
+        if (strcasecmp(criterioOrdenacao, "nome") == 0) {
             if (strcasecmp(p->nome, (*raiz)->p->nome) < 0) {
                 deveIrParaEsquerda = 1;
             }
-        } else if(strcasecmp(criterioOrdenacao, "codigo")) {
+        } else if(strcasecmp(criterioOrdenacao, "codigo") == 0) {
             if (p->codigo < (*raiz)->p->codigo) {
                 deveIrParaEsquerda = 1;
             }

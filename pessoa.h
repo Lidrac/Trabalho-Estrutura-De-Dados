@@ -4,7 +4,7 @@
 typedef struct {
     int codigo;
     char nome[50];
-    int fone;
+    char fone[20];
     char endereco[50];
     char dataNascimento[30];
     int ativo;
