@@ -7,11 +7,10 @@
 #include "tipoPet.h"
 
 void DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **FilaPet, NoFilaTipoPet **FilaTipo);
-void MostrarFilasEspecificas(NoFilaPessoa *FilaPessoa, NoFilaPet *FilaPet, NoFilaTipoPet *FilaTipo);
 char* trim(char *str);
 void limpar_string(char *destino, char *origem);
 int comeca_com(char *linha, char *termo);
-int extrair_id_where(char *linha);
+char* extrair_campo(char **cursor);
 void AddFilaPessoa(NoFilaPessoa **fila, comandoPessoa cmd);
 void AddFilaPet(NoFilaPet **fila, comandoPet cmd);
 void AddFilaTipoPet(NoFilaTipoPet **fila, comandoTipoPet cmd);

@@ -13,8 +13,10 @@ int main()
 
     printf("1. programa rodou\n");
     Fila *minhaFila = criar_fila();
+
+    long cursor = 0;
     printf("2. fila criou\n");
-    ler_arquivo(&minhaFila, "comandos.txt");
+    ler_arquivo(&minhaFila, "comandos.txt", &cursor);
     printf("3. leitura feita\n");
     if (minhaFila->ini == NULL)
     {
