@@ -553,7 +553,7 @@ void alterarPet(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, p
     }
 
     // Se o código do dono mudou, verificar se o novo dono existe
-    if(alvoPet->p->codigo_pes != novosDados->codigo_pes) {
+    if(novosDados->codigo_pes != -1 && alvoPet->p->codigo_pes != novosDados->codigo_pes) {
         // caso o código da pessoa não exista
         if(!buscarPessoaPorCodigo(iniPes, novosDados->codigo_pes)) {
             printf("\nO novo dono não está cadastrado!!!\n");
@@ -562,7 +562,7 @@ void alterarPet(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, p
     }
 
     // Se o código do tipo mudou, verificar se o novo tipo existe
-    if(alvoPet->p->codigo_tipo != novosDados->codigo_tipo) {
+    if(novosDados->codigo_tipo != -1 && alvoPet->p->codigo_tipo != novosDados->codigo_tipo) {
         // Caso o código do tipo não exista
         if(!buscarTipoDePetPorCodigo(iniTipoDePet, novosDados->codigo_tipo)) {
             printf("\nO tipo do pet não está cadastrado!!!\n");
