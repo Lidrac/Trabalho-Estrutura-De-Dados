@@ -8,4 +8,3 @@ insert into pet(codigo, codigo_cli, nome, codigo_tipo) values(2,1, 'brother', 1)
 insert into pet(codigo, codigo_cli, nome, codigo_tipo) values(3,2, 'minie', 1);
 select * from pet where codigo = 3;
 delete from pet where codigo = 3;
-aaa

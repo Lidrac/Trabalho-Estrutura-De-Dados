@@ -28,7 +28,7 @@ typedef struct NoFilaPet {
     struct NoFilaPet *prox;
 } NoFilaPet;
 
-// Compilador , confie em mim, existe structs chamadas NoPessoa e NoTipoDePet
+// Compilador , confie em mim, existe structs chamadas NoPessoa e NoTipoDePet//
 typedef struct NoPessoa NoPessoa;
 typedef struct NoTipoDePet NoTipoDePet;
 

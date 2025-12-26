@@ -6,6 +6,8 @@
 #include "pet.h"
 #include "tipoPet.h"
 
+//
+
 void DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **FilaPet, NoFilaTipoPet **FilaTipo);
 void MostrarFilasEspecificas(NoFilaPessoa *FilaPessoa, NoFilaPet *FilaPet, NoFilaTipoPet *FilaTipo);
 char* trim(char *str);

@@ -7,7 +7,7 @@ typedef struct
 {
     char linhacompleta[tam_linha];
     int id;
-    //int tipo_tabela;
+
 } Comando;
 
 // no da fila

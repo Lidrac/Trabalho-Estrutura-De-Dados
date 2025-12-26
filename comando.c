@@ -57,7 +57,7 @@ void ler_arquivo(Fila **fila, char *nome_arquivo, long *cursor)
     int indice = 0;
     char c;
 
-    // iniciando leitura do arquivo
+    // iniciando leitura do arquivo.
     while ( (c = fgetc(arquivo)) != EOF) 
     {
 

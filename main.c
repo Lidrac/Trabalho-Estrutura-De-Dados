@@ -7,7 +7,7 @@
 #include "comando.h"
 #include "validador.h"
 
-// FUNÇÕES PARA PESSOAS
+// //FUNÇÕES PARA PESSOAS
 
 void inserirPessoa(NoPessoa **iniPes, pessoa *p) {
     // Para verificar se já existe alguém com esse código
