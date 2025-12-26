@@ -116,6 +116,34 @@ void removerPessoa(NoPessoa **iniPes, NoPet **iniPet ,int codigo) {
 
 }
 
+void removerPessoaPorCriterio(NoPessoa **iniPes, NoPet **iniPet, comandoPessoa cmd) {
+    NoPessoa *atual = *iniPes;
+
+    while (atual != NULL) {
+        NoPessoa *proximo = atual->prox; 
+        int deveDeletar = 0;
+
+        if (atual->p->ativo) {
+            if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0) {
+                if (atual->p->codigo == cmd.dadosPessoa->codigo) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0) {
+                if (strcasecmp(atual->p->nome, cmd.dadosPessoa->nome) == 0) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "data_nascimento") == 0) {
+                if (strcasecmp(atual->p->dataNascimento, cmd.dadosPessoa->dataNascimento) == 0) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "endereco") == 0) {
+                if (strcasecmp(atual->p->endereco, cmd.dadosPessoa->endereco) == 0) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "fone") == 0) {
+                if (strcasecmp(atual->p->fone, cmd.dadosPessoa->fone) == 0) deveDeletar = 1;
+            }
+        }
+
+        if (deveDeletar) {
+            removerPessoa(iniPes, iniPet, atual->p->codigo);
+        }
+        atual = proximo;
+    }
+}
+
 NoPessoa *buscarPessoaPorCodigo(NoPessoa **iniPes, int codigo) {
     NoPessoa *aux = *iniPes;
 
@@ -138,10 +166,10 @@ void alterarPessoa(NoPessoa **iniPes, pessoa *novosDados) {
         return;
     }
 
-    strcpy(alvoPessoa->p->nome, novosDados->nome);
-    strcpy(alvoPessoa->p->endereco, novosDados->endereco);
-    strcpy(alvoPessoa->p->dataNascimento, novosDados->dataNascimento);
-    alvoPessoa->p->fone = novosDados->fone;
+    if(strlen(novosDados->nome) > 0) strcpy(alvoPessoa->p->nome, novosDados->nome);
+    if(strlen(novosDados->endereco) > 0) strcpy(alvoPessoa->p->endereco, novosDados->endereco);
+    if(strlen(novosDados->dataNascimento) > 0) strcpy(alvoPessoa->p->dataNascimento, novosDados->dataNascimento);
+    if(strlen(novosDados->fone) > 0) strcpy(alvoPessoa->p->fone, novosDados->fone);
 
     // Alteração do arquivo
     FILE *arquivo = fopen("ArquivosBinarios/pessoas.bin", "r+b");
@@ -155,6 +183,117 @@ void alterarPessoa(NoPessoa **iniPes, pessoa *novosDados) {
         fclose(arquivo);
     }
     
+}
+
+void alterarPessoaPorCriterio(NoPessoa **iniPes, NoPet **iniPet, comandoPessoa cmd) {
+    NoPessoa *atual = *iniPes;
+
+    while (atual != NULL) {
+        NoPessoa *proximo = atual->prox; 
+        int deveAlterar = 0;
+
+        if (atual->p->ativo) {
+            if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0) {
+                if (atual->p->codigo == cmd.dadosPessoa->codigo) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0) {
+                if (strcasecmp(atual->p->nome, cmd.dadosPessoa->nome) == 0) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "data") == 0) {
+                if (strcasecmp(atual->p->dataNascimento, cmd.dadosPessoa->dataNascimento) == 0) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "endereco") == 0) {
+                if (strcasecmp(atual->p->endereco, cmd.dadosPessoa->endereco) == 0) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "fone") == 0) {
+                if (strcasecmp(atual->p->fone, cmd.dadosPessoa->fone) == 0) deveAlterar = 1;
+            }
+        }
+
+        if (deveAlterar) {
+            alterarPessoa(iniPes, cmd.dadosPessoa);
+        }
+        atual = proximo;
+    }
+}
+
+void inserirNaArvorePessoa(NoArvorePessoa **raiz, pessoa *p, char *criterioOrdenacao) {
+    if (*raiz == NULL) {
+        *raiz = (NoArvorePessoa *)malloc(sizeof(NoArvorePessoa));
+        (*raiz)->p = p;
+        (*raiz)->esq = NULL;
+        (*raiz)->dir = NULL;
+    } else {
+        int deveIrParaEsquerda = 0;
+        if (strcasecmp(criterioOrdenacao, "nome") == 0) {
+            if (strcasecmp(p->nome, (*raiz)->p->nome) < 0) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "data") == 0) {
+            if (strcasecmp(p->dataNascimento, (*raiz)->p->dataNascimento)) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "endereco") == 0) {
+            if (strcasecmp(p->endereco, (*raiz)->p->endereco)) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "telefone") == 0) {
+            if (strcasecmp(p->fone, (*raiz)->p->fone)) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "codigo") == 0) {
+            if (p->codigo < (*raiz)->p->codigo) {
+                deveIrParaEsquerda = 1;
+            }
+        }
+
+        if (deveIrParaEsquerda) {
+            inserirNaArvorePessoa(&(*raiz)->esq, p, criterioOrdenacao);
+        } else {
+            inserirNaArvorePessoa(&(*raiz)->dir, p, criterioOrdenacao);
+        }
+    }
+}
+
+void exibirArvorePessoa(NoArvorePessoa *raiz) {
+    if (raiz != NULL) {
+        exibirArvorePessoa(raiz->esq);
+        printf("ID: %d | Nome: %s | Fone: %s\n", raiz->p->codigo, raiz->p->nome, raiz->p->fone);
+        exibirArvorePessoa(raiz->dir);
+    }
+}
+
+void liberarArvorePessoa(NoArvorePessoa *raiz) {
+    if (raiz != NULL) {
+        liberarArvorePessoa(raiz->esq);
+        liberarArvorePessoa(raiz->dir);
+        free(raiz);
+    }
+}
+
+void executarSelectPessoa(NoPessoa *lista, comandoPessoa cmd) {
+    NoArvorePessoa *raiz = NULL;
+    int encontrou = 0;
+    NoPessoa *aux = lista;
+
+    while (aux) {
+        if (aux->p->ativo) {
+            int match = 0;
+            // Verifica filtros
+            if (strlen(cmd.tipoFiltragem) == 0) match = 1; 
+            else if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0 && aux->p->codigo == cmd.dadosPessoa->codigo) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0 && strstr(aux->p->nome, cmd.dadosPessoa->nome)) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "endereco") == 0 && strstr(aux->p->endereco, cmd.dadosPessoa->endereco)) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "fone") == 0 && strstr(aux->p->fone, cmd.dadosPessoa->fone)) match = 1;
+
+            if (match) {
+                // Insere na árvore para ordenar
+                inserirNaArvorePessoa(&raiz, aux->p, cmd.criterioOrdenacao);
+                encontrou++;
+            }
+        }
+        aux = aux->prox;
+    }
+
+    if (encontrou > 0) exibirArvorePessoa(raiz);
+
+    liberarArvorePessoa(raiz);
 }
 
 void finalizarListaDePessoas(NoPessoa **iniPes) {
@@ -249,7 +388,7 @@ void mostrarPessoas(NoPessoa **iniPes) {
     while(aux) {
         printf("Código: %d\n", (*aux).p->codigo);
         printf("nome: %s\n", (*aux).p->nome);
-        printf("fone: %d\n", (*aux).p->fone);
+        printf("fone: %s\n", (*aux).p->fone);
         printf("endereco: %s\n", (*aux).p->endereco);
         printf("data de nascimento: %s\n", (*aux).p->dataNascimento);
 
@@ -366,6 +505,32 @@ void removerPet(NoPet **iniPet, int codigo) {
 
 }
 
+void removerPetPorCriterio(NoPet **iniPet, comandoPet cmd) {
+    NoPet *atual = *iniPet;
+
+    while (atual != NULL) {
+        NoPet *proximo = atual->prox; 
+        int deveDeletar = 0;
+
+        if (atual->p->ativo) {
+            if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0) {
+                if (atual->p->codigo == cmd.dadosPet->codigo) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0) {
+                if (strcasecmp(atual->p->nome, cmd.dadosPet->nome) == 0) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "codigo_pes") == 0) {
+                if (atual->p->codigo_pes == cmd.dadosPet->codigo_pes) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "codigo_tipo") == 0) {
+                if (atual->p->codigo_tipo == cmd.dadosPet->codigo_tipo) deveDeletar = 1;
+            }
+        }
+
+        if (deveDeletar) {
+            removerPet(iniPet, atual->p->codigo);
+        }
+        atual = proximo;
+    }
+}
+
 NoPet *buscarPetPorCodigo(NoPet **iniPet, int codigo) {
     NoPet *aux = *iniPet;
 
@@ -388,7 +553,7 @@ void alterarPet(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, p
     }
 
     // Se o código do dono mudou, verificar se o novo dono existe
-    if(alvoPet->p->codigo_pes != novosDados->codigo_pes) {
+    if(novosDados->codigo_pes != -1 && alvoPet->p->codigo_pes != novosDados->codigo_pes) {
         // caso o código da pessoa não exista
         if(!buscarPessoaPorCodigo(iniPes, novosDados->codigo_pes)) {
             printf("\nO novo dono não está cadastrado!!!\n");
@@ -397,7 +562,7 @@ void alterarPet(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, p
     }
 
     // Se o código do tipo mudou, verificar se o novo tipo existe
-    if(alvoPet->p->codigo_tipo != novosDados->codigo_tipo) {
+    if(novosDados->codigo_tipo != -1 && alvoPet->p->codigo_tipo != novosDados->codigo_tipo) {
         // Caso o código do tipo não exista
         if(!buscarTipoDePetPorCodigo(iniTipoDePet, novosDados->codigo_tipo)) {
             printf("\nO tipo do pet não está cadastrado!!!\n");
@@ -405,9 +570,9 @@ void alterarPet(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, p
         }
     }
 
-    alvoPet->p->codigo_pes = novosDados->codigo_pes;
-    alvoPet->p->codigo_tipo = novosDados->codigo_tipo;
-    strcpy(alvoPet->p->nome, novosDados->nome);
+    if(strlen(novosDados->nome) > 0) strcpy(alvoPet->p->nome, novosDados->nome);
+    if(novosDados->codigo_tipo != -1) alvoPet->p->codigo_tipo = novosDados->codigo_tipo;
+    if(novosDados->codigo_pes != -1) alvoPet->p->codigo_pes = novosDados->codigo_pes;
 
     // Alteração no arquivo
 
@@ -422,6 +587,109 @@ void alterarPet(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, p
         fclose(arquivo);
     }
 
+}
+
+void alterarPetPorCriterio(NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet, comandoPet cmd) {
+    NoPet *atual = *iniPet;
+
+    while (atual != NULL) {
+        NoPet *proximo = atual->prox; 
+        int deveAlterar = 0;
+
+        if (atual->p->ativo) {
+            if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0) {
+                if (atual->p->codigo == cmd.dadosPet->codigo) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0) {
+                if (strcasecmp(atual->p->nome, cmd.dadosPet->nome) == 0) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "codigo_pes") == 0) {
+                if (atual->p->codigo_pes == cmd.dadosPet->codigo_pes) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "codigo_tipo") == 0) {
+                if (atual->p->codigo_tipo == cmd.dadosPet->codigo_tipo) deveAlterar = 1;
+            }
+        }
+
+        if (deveAlterar) {
+            alterarPet(iniPet, iniPes, iniTipoDePet, cmd.dadosPet);
+        }
+        atual = proximo;
+    }
+}
+
+void inserirNaArvorePet(NoArvorePet **raiz, pet *p, char *criterioOrdenacao) {
+    if (*raiz == NULL) {
+        *raiz = (NoArvorePet *)malloc(sizeof(NoArvorePet));
+        (*raiz)->p = p;
+        (*raiz)->esq = NULL;
+        (*raiz)->dir = NULL;
+    } else {
+        int deveIrParaEsquerda = 0;
+        if (strcasecmp(criterioOrdenacao, "nome") == 0) {
+            if (strcasecmp(p->nome, (*raiz)->p->nome) < 0) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "codigo") == 0) {
+            if (p->codigo < (*raiz)->p->codigo) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "codigo_pes") == 0) {
+            if (p->codigo_pes < (*raiz)->p->codigo_pes) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "codigo_tipo") == 0) {
+            if (p->codigo_tipo < (*raiz)->p->codigo_tipo) {
+                deveIrParaEsquerda = 1;
+            }
+        }
+
+        if (deveIrParaEsquerda) {
+            inserirNaArvorePet(&(*raiz)->esq, p, criterioOrdenacao);
+        } else {
+            inserirNaArvorePet(&(*raiz)->dir, p, criterioOrdenacao);
+        }
+    }
+}
+
+void exibirArvorePet(NoArvorePet *raiz) {
+    if (raiz != NULL) {
+        exibirArvorePet(raiz->esq);
+        printf("ID: %d | Nome: %s | Dono: %d | Tipo: %d\n", 
+            raiz->p->codigo, raiz->p->nome, raiz->p->codigo_pes, raiz->p->codigo_tipo);
+        exibirArvorePet(raiz->dir);
+    }
+}
+
+void liberarArvorePet(NoArvorePet *raiz) {
+    if (raiz != NULL) {
+        liberarArvorePet(raiz->esq);
+        liberarArvorePet(raiz->dir);
+        free(raiz);
+    }
+}
+
+void executarSelectPet(NoPet *lista, comandoPet cmd) {
+    NoArvorePet *raiz = NULL;
+    int encontrou = 0;
+    NoPet *aux = lista;
+
+    while (aux) {
+        if (aux->p->ativo) {
+            int match = 0;
+            if (strlen(cmd.tipoFiltragem) == 0) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0 && aux->p->codigo == cmd.dadosPet->codigo) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0 && strstr(aux->p->nome, cmd.dadosPet->nome)) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "codigo_pes") == 0 && aux->p->codigo_pes == cmd.dadosPet->codigo_pes) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "codigo_tipo") == 0 && aux->p->codigo_tipo == cmd.dadosPet->codigo_tipo) match = 1;
+
+            if (match) {
+                inserirNaArvorePet(&raiz, aux->p, cmd.criterioOrdenacao);
+                encontrou++;
+            }
+        }
+        aux = aux->prox;
+    }
+    if (encontrou > 0) exibirArvorePet(raiz);
+
+    liberarArvorePet(raiz);
 }
 
 void finalizarListaDePets(NoPet **iniPet) {
@@ -632,6 +900,28 @@ void removerTipoDePet(NoTipoDePet **iniTipoDePet, NoPet **iniPet, int codigo) {
     free(alvoTipoDePet);
 }
 
+void removerTipoDePetPorCriterio(NoTipoDePet **iniTipoDePet, NoPet **iniPet, comandoTipoPet cmd) {
+    NoTipoDePet *atual = *iniTipoDePet;
+
+    while (atual != NULL) {
+        NoTipoDePet *proximo = atual->prox; 
+        int deveDeletar = 0;
+
+        if (atual->p->ativo) {
+            if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0) {
+                if (atual->p->codigo == cmd.dadosTipoDePet->codigo) deveDeletar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0) {
+                if (strcasecmp(atual->p->nome, cmd.dadosTipoDePet->nome) == 0) deveDeletar = 1;
+            }
+        }
+
+        if (deveDeletar) {
+            removerTipoDePet(iniTipoDePet, iniPet, atual->p->codigo);
+        }
+        atual = proximo;
+    }
+}
+
 NoTipoDePet *buscarTipoDePetPorCodigo(NoTipoDePet **iniTipoDePet, int codigo) {
     NoTipoDePet *aux = *iniTipoDePet;
 
@@ -653,7 +943,7 @@ void alterarTipoDePet(NoTipoDePet **iniTipoDePet, tipoPet *novosDados) {
         return;
     }
 
-    strcpy(alvoTipoDePet->p->nome, novosDados->nome);
+    if(strlen(novosDados->nome) > 0) strcpy(alvoTipoDePet->p->nome, novosDados->nome);
 
     // Alteração no arquivo
 
@@ -667,6 +957,94 @@ void alterarTipoDePet(NoTipoDePet **iniTipoDePet, tipoPet *novosDados) {
 
         fclose(arquivo);
     }
+}
+
+void alterarTipoDePetPorCriterio(NoTipoDePet **iniTipoDePet, NoPet **iniPet, comandoTipoPet cmd) {
+    NoTipoDePet *atual = *iniTipoDePet;
+
+    while (atual != NULL) {
+        NoTipoDePet *proximo = atual->prox; 
+        int deveAlterar = 0;
+
+        if (atual->p->ativo) {
+            if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0) {
+                if (atual->p->codigo == cmd.dadosTipoDePet->codigo) deveAlterar = 1;
+            } else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0) {
+                if (strcasecmp(atual->p->nome, cmd.dadosTipoDePet->nome) == 0) deveAlterar = 1;
+            }
+        }
+
+        if (deveAlterar) {
+            alterarTipoDePet(iniTipoDePet, cmd.dadosTipoDePet);
+        }
+        atual = proximo;
+    }
+}
+
+void inserirNaArvoreTipoPet(NoArvoreTipoDePet **raiz, tipoPet *p, char *criterioOrdenacao) {
+    if (*raiz == NULL) {
+        *raiz = (NoArvoreTipoDePet *)malloc(sizeof(NoArvoreTipoDePet));
+        (*raiz)->p = p;
+        (*raiz)->esq = NULL;
+        (*raiz)->dir = NULL;
+    } else {
+        int deveIrParaEsquerda = 0;
+        if (strcasecmp(criterioOrdenacao, "nome") == 0) {
+            if (strcasecmp(p->nome, (*raiz)->p->nome) < 0) {
+                deveIrParaEsquerda = 1;
+            }
+        } else if(strcasecmp(criterioOrdenacao, "codigo") == 0) {
+            if (p->codigo < (*raiz)->p->codigo) {
+                deveIrParaEsquerda = 1;
+            }
+        }
+
+        if (deveIrParaEsquerda) {
+            inserirNaArvoreTipoPet(&(*raiz)->esq, p, criterioOrdenacao);
+        } else {
+            inserirNaArvoreTipoPet(&(*raiz)->dir, p, criterioOrdenacao);
+        }
+    }
+}
+
+void exibirArvoreTipoPet(NoArvoreTipoDePet *raiz) {
+    if (raiz != NULL) {
+        exibirArvoreTipoPet(raiz->esq);
+        printf("ID: %d | Descricao: %s\n", raiz->p->codigo, raiz->p->nome);
+        exibirArvoreTipoPet(raiz->dir);
+    }
+}
+
+void liberarArvoreTipoPet(NoArvoreTipoDePet *raiz) {
+    if (raiz != NULL) {
+        liberarArvoreTipoPet(raiz->esq);
+        liberarArvoreTipoPet(raiz->dir);
+        free(raiz);
+    }
+}
+
+void executarSelectTipo(NoTipoDePet *lista, comandoTipoPet cmd) {
+    NoArvoreTipoDePet *raiz = NULL;
+    int encontrou = 0;
+    NoTipoDePet *aux = lista;
+
+    while (aux) {
+        if (aux->p->ativo) {
+            int match = 0;
+            if (strlen(cmd.tipoFiltragem) == 0) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "codigo") == 0 && aux->p->codigo == cmd.dadosTipoDePet->codigo) match = 1;
+            else if (strcasecmp(cmd.tipoFiltragem, "nome") == 0 && strstr(aux->p->nome, cmd.dadosTipoDePet->nome)) match = 1;
+
+            if (match) {
+                inserirNaArvoreTipoPet(&raiz, aux->p, cmd.criterioOrdenacao);
+                encontrou++;
+            }
+        }
+        aux = aux->prox;
+    }
+    if (encontrou > 0) exibirArvoreTipoPet(raiz);
+    
+    liberarArvoreTipoPet(raiz);
 }
 
 void finalizarListaDeTiposDePet(NoTipoDePet **iniTipoDePet) {
@@ -783,11 +1161,18 @@ void processarFilaTiposDePets(NoFilaTipoPet *fila, NoTipoDePet **iniTipoDePet, N
                inserirTipoDePet(iniTipoDePet, fila->info.dadosTipoDePet);
                break;
             case 2:
-               removerTipoDePet(iniTipoDePet, iniPet, fila->info.idAlvo);
+               removerTipoDePetPorCriterio(iniTipoDePet, iniPet, fila->info);
+
+               if(fila->info.dadosTipoDePet) free(fila->info.dadosTipoDePet);
                break;
             case 3:
-               alterarTipoDePet(iniTipoDePet, fila->info.dadosTipoDePet);
+               alterarTipoDePetPorCriterio(iniTipoDePet, iniPet, fila->info);
                // Liberar o ponteiro de novosDados
+               if(fila->info.dadosTipoDePet) free(fila->info.dadosTipoDePet);
+               break;
+            case 4:
+               executarSelectTipo(*iniTipoDePet, fila->info);
+
                if(fila->info.dadosTipoDePet) free(fila->info.dadosTipoDePet);
                break;
         }
@@ -807,12 +1192,18 @@ void processarFilaPessoas(NoFilaPessoa *fila, NoPessoa **iniPes, NoPet **iniPet)
                inserirPessoa(iniPes, fila->info.dadosPessoa);
                break;
             case 2:
-               removerPessoa(iniPes, iniPet, fila->info.idAlvo);
+               removerPessoaPorCriterio(iniPes, iniPet, fila->info);
+
+               if(fila->info.dadosPessoa) free(fila->info.dadosPessoa);
                break;
             case 3:
-                alterarPessoa(iniPes, fila->info.dadosPessoa);
-                // Liberar o ponteiro de novos Dados
+                alterarPessoaPorCriterio(iniPes,iniPet, fila->info);
                 if(fila->info.dadosPessoa) free(fila->info.dadosPessoa);    
+               break;
+            case 4:
+               executarSelectPessoa(*iniPes, fila->info);
+
+               if(fila->info.dadosPessoa) free(fila->info.dadosPessoa);
                break;
         }
 
@@ -831,11 +1222,20 @@ void processarFilaPets(NoFilaPet *fila, NoPet **iniPet, NoPessoa **iniPes, NoTip
                inserirPet(iniPet, iniPes, iniTipoDePet, fila->info.dadosPet);
                break;
             case 2:
-               removerPet(iniPet, fila->info.idAlvo);
+               removerPetPorCriterio(iniPet, fila->info);
+
+               if(fila->info.dadosPet) free(fila->info.dadosPet);
                break;
+
             case 3:
-               alterarPet(iniPet, iniPes, iniTipoDePet, fila->info.dadosPet);
-               // Liberar o ponteiro de novos dados
+                alterarPetPorCriterio(iniPet, iniPes, iniTipoDePet, fila->info);
+                
+                if(fila->info.dadosPet) free(fila->info.dadosPet);
+                break;
+               
+            case 4:
+               executarSelectPet(*iniPet, fila->info);
+
                if(fila->info.dadosPet) free(fila->info.dadosPet);
                break;
         }
@@ -864,13 +1264,13 @@ void adicionarComandoNoTXT() {
 
 void processarNovosComandos(long *cursorTXT, NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos) {
     
-    // 1. Cria fila vazia
+    //Cria fila vazia
     NoFilaPessoa *filaPes = NULL;
     NoFilaPet *filaPet = NULL;
     NoFilaTipoPet *filaTipo = NULL;
     Fila *filaBruta = criar_fila();
 
-    // 2. Lê APENAS O QUE É NOVO (usando o cursor)
+    // Lê APENAS O QUE É NOVO (usando o cursor)
     ler_arquivo(&filaBruta, "comandos.txt", cursorTXT);
 
     if (filaBruta->ini == NULL) {
@@ -878,7 +1278,7 @@ void processarNovosComandos(long *cursorTXT, NoPessoa **listaPessoas, NoPet **li
     } else {
         printf("\n[SISTEMA] Processando %d novos comandos...\n", filaBruta->tam);
         
-        // 3. Distribui e Executa (usando inserirPessoa, inserirPet...)
+        // Distribui e Executa (usando inserirPessoa, inserirPet...)
         DistribuirComandos(filaBruta, &filaPes, &filaPet, &filaTipo);
         
         processarFilaPessoas(filaPes, listaPessoas, listaPets);
@@ -902,6 +1302,7 @@ void exibir(NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos
     printf("============================\n");
     system("pause");
 }
+
 
 int main() {
 

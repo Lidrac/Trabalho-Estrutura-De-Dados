@@ -17,7 +17,8 @@ typedef struct NoTipoDePet {
 typedef struct comandoTipoPet {
     int operacao;
     tipoPet *dadosTipoDePet;
-    int idAlvo;
+    char tipoFiltragem[50];
+    char criterioOrdenacao[50];
 } comandoTipoPet;
 
 typedef struct NoFilaTipoPet {
@@ -25,18 +26,31 @@ typedef struct NoFilaTipoPet {
     struct NoFilaTipoPet *prox;
 } NoFilaTipoPet;
 
-// Compilador, confie em mim, existe uma struct chamada NoPet//
+// Parte de ordenação
+typedef struct NoArvoreTipoDePet {
+    struct NoArvoreTipoDePet *esq;
+    struct NoArvoreTipoDePet *dir;
+    tipoPet *p;
+} NoArvoreTipoDePet;
+
+// Compilador, confie em mim, existe uma struct chamada NoPet
 typedef struct NoPet NoPet;
 
 void inserirTipoDePet(NoTipoDePet **iniTipoDePet, tipoPet *p);
 void removerTipoDePet(NoTipoDePet **iniTipoDePet, NoPet **iniPet, int codigo);
+void removerTipoDePetPorCriterio(NoTipoDePet **iniTipoDePet, NoPet **iniPet, comandoTipoPet cmd);
 NoTipoDePet *buscarTipoDePetPorCodigo(NoTipoDePet **iniTipoDePet, int codigo);
 void alterarTipoDePet(NoTipoDePet **iniTipoDePet, tipoPet *novosDados);
+void alterarTipoDePetPorCriterio(NoTipoDePet **iniTipoDePet, NoPet **iniPet, comandoTipoPet cmd);
+void inserirNaArvoreTipoPet(NoArvoreTipoDePet **raiz, tipoPet *p, char *criterioOrdenacao);
+void exibirArvoreTipoPet(NoArvoreTipoDePet *raiz);
+void liberarArvoreTipoPet(NoArvoreTipoDePet *raiz);
+void executarSelectTipo(NoTipoDePet *lista, comandoTipoPet cmd);
 void finalizarListaDeTiposDePet(NoTipoDePet **iniTipoDePet);
 void pegarTiposDePetArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo);
 void salvarTiposDePetNoArquivo(NoTipoDePet **iniTipoDePet, char *nomeArquivo);
 void processarFilaTiposDePets(NoFilaTipoPet *fila, NoTipoDePet **iniTipoDePet, NoPet **iniPet);
-
+void mostrarTiposDePet(NoTipoDePet **iniTipoDePet);
 
 
 #endif
