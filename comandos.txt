@@ -9,3 +9,8 @@ update pet set codigo_tipo = 2 where codigo = 100;
 update pet set codigo_pes = 20 where codigo = 100;
 update pet set codigo_pes = 10 where codigo = 200;
 select * from pet order by nome;
+vasco da gama
+insert into tipo_pet (descricao, codigo) values ('Papagaio', 20);
+insert into tipo_pet (nome, codigo) values ('hamster', 21);
+insert into pessoa (fone, codigo, nome) values ('85911112222', 20, 'Mariana Invertida');
+insert into pessoa (endereco, data_nascimento, nome, codigo, fone) values ('Rua da Bagunça, 123', '15/05/1995', 'Pedro Misturado', 21, '85933334444');

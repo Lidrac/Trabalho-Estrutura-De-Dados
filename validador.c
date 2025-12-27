@@ -48,67 +48,124 @@ int atoi_limpo(char *str) {
     return atoi(temp);
 }
 
-char* extrair_campo(char **cursor) {
-    char *inicio = *cursor;
+// ==================================================================================
+// FERRAMENTAS DE PARSING AVANÇADO (TOKENIZAÇÃO SEGURA)
+// ==================================================================================
 
-    // pula espaços em branco
-    while(*inicio && (*inicio == ',' || *inicio == ' ' || *inicio == '\t')){
-        inicio++;
+int separar_colunas_valores (char *linha, char *bufferColumns, char *bufferValues){
+    char linhaCopy[300];
+    strcpy(linhaCopy, linha);
+
+    char linhaLower[300];
+    for(int i = 0; linhaCopy[i]; i++){
+        linhaLower[i] = tolower(linhaCopy[i]);
     }
 
-    if(*inicio == '\0' || *inicio == ')'){
-        return NULL;
-    }
-    int dentro_aspas = 0;
-    char *atual = inicio;
+    char *ptrValues = strstr(linhaLower, "values");
+    if(!ptrValues) return 0;
 
-    while (*atual != '\0'){
-        if(*atual == '\''){
-            dentro_aspas = !dentro_aspas;
-        }
-        else if (!dentro_aspas && (*atual == ',' || *atual == ')')){
-            if(*atual == ')'){
-                *atual = '\0';
-                *cursor = atual;
-            } else {
-                *atual = '\0';
-                *cursor = atual + 1;
-            }
-            return trim(inicio);
-        }
-        atual++;
-    }
-    *cursor = atual;
-    return trim(inicio);
+    int offsetValues = ptrValues - linhaLower;
+
+    // achar parênteses das colunas (antes do valores)
+    char *EndColumns = linhaCopy + offsetValues;
+    char *StartColumns = strchr(linhaCopy, '(');
+
+    if (!StartColumns || StartColumns > EndColumns) return 0;
+
+    char *FecharColumns = strchr(StartColumns, ')');
+    if (!FecharColumns || FecharColumns > EndColumns) return 0;
+
+    strncpy(bufferColumns, StartColumns + 1, FecharColumns - StartColumns - 1);
+    bufferColumns[FecharColumns - StartColumns - 1] = '\0';
+
+    // achar parênteses dos valores (depois do valores)
+    char *ptrStartValues = linhaCopy + offsetValues + 6;
+    char *StartValues = strchr(ptrStartValues, '(');
+    if(!StartValues) return 0;
+
+    char *FecharValues = strrchr(StartValues, ')');
+    if(!FecharValues) return 0;
+
+    strncpy(bufferValues, StartValues + 1, FecharValues - StartValues - 1);
+    bufferValues[FecharValues - StartValues - 1] = '\0';
+
+    return 1;
+
 }
 
+int separar_tokens_seguro (char *entrada, char **saida, int max){
+    int quantidade = 0;
+    int aspas = 0;
+    char *inicio = entrada;
+
+    for(int i=0; entrada[i]; i++){
+        if(entrada[i] == '\'' || entrada [i] == '\"') {
+            aspas = !aspas;
+    }
+
+        if(entrada[i] == ',' && !aspas){
+            entrada[i] = '\0';
+            saida[quantidade++] = trim(inicio);
+            inicio = &entrada[i+1];
+            if(quantidade >= max){
+                return quantidade;
+            }
+        }
+    }
+    if(*inicio){
+        saida[quantidade++] = trim(inicio);
+    } 
+    return quantidade;
+}
+
+// Busca valores em comandos UPDATE/DELETE/SELECT (onde temos chave=valor)
 int buscar_valor(char *linha, char *nomeCampo, char *destino) {
-    char *ptrCampo = strstr(linha, nomeCampo);
+    char linhaLower[300];
+    char campoBusca[50];
+
+    // Simplificacao: Busca substring case insensitive
+    strcpy(linhaLower, linha);
+    for(int i =0; linhaLower[i]; i++){
+        linhaLower[i] = tolower(linha[i]);
+    }
+
+    strcpy(campoBusca, nomeCampo);
+    for(int i =0; campoBusca[i]; i++){
+        campoBusca[i] = tolower(campoBusca[i]);
+    }
+
+    char *ptrCampo = strstr(linhaLower, campoBusca);
     if(!ptrCampo) return 0;
-    
-    char *ptrIgual = strchr(ptrCampo, '=');
+
+    // Calcula offset para pegar no ponteiro original (que tem Case original)
+    int offset = ptrCampo - linhaLower;
+    char *ptrOriginal = linha + offset;
+
+    char *ptrIgual = strchr(ptrOriginal, '=');
     if(!ptrIgual) return 0;
 
     char temp[300];
     int k = 0;
-    ptrIgual++;
+    ptrIgual++; // pula o =
 
-    while (isspace((unsigned char)*ptrIgual)) ptrIgual++;
+    while (isspace(*ptrIgual)) ptrIgual++;// pula espaços
 
     int dentroAspas = 0;
-    while (*ptrIgual) {
-        if (*ptrIgual == '\'') dentroAspas = !dentroAspas;
+    while(*ptrIgual) {
+        if(*ptrIgual == '\''){
+            dentroAspas = !dentroAspas;
+        }
 
-        if (!dentroAspas && (*ptrIgual == ',' || strncasecmp(ptrIgual, "where", 5) == 0)) {
+        if(!dentroAspas && (*ptrIgual == ',' || strncasecmp(ptrIgual, "where", 5) == 0 || *ptrIgual == ';')){
             break;
         }
         temp[k++] = *ptrIgual++;
     }
     temp[k] = '\0';
-    
+
     limpar_string(destino, temp);
     return 1;
-}
+}  
 
 // =================================================================================
 // ADD FILAS
@@ -180,93 +237,69 @@ int processar_tipo_pet(char *linha, int operacao, NoFilaTipoPet **fila) {
     comandoTipoPet cmd;
     cmd.operacao = operacao;
     cmd.dadosTipoDePet = NULL;
-
     strcpy(cmd.tipoFiltragem, "");
     strcpy(cmd.criterioOrdenacao, "");
 
-    if (operacao == 1) { // INSERT
+    if (operacao == 1) { // INSERT DINÂMICO
         cmd.dadosTipoDePet = (tipoPet *)malloc(sizeof(tipoPet));
-
+        cmd.dadosTipoDePet->codigo = 0;
         strcpy(cmd.dadosTipoDePet->nome, "");
-        
-        char *ptrValues = strstr(linha, "values");
-        
-        // ERRO
-        if(!ptrValues) {
-            free(cmd.dadosTipoDePet);
-            return 0; 
+
+        char strCols[300] = {0}, strVals[300] = {0};
+
+        if (!separar_colunas_valores(linha, strCols, strVals)) {
+            free(cmd.dadosTipoDePet); return 0; 
         }
 
-        char *valStart = strchr(ptrValues, '(');
-        
-        // ERRO
-        if(!valStart) {
-            free(cmd.dadosTipoDePet);
-            return 0;
-        }
-        
-        char *cursor_atual = valStart + 1;
-        char *val;
-        int contador = 0;
-        
-        while ((val = extrair_campo(&cursor_atual)) != NULL) {
-            char limpo[300];
-            limpar_string(limpo, val); // Remove aspas e espaços
+        char *cols[10]; char *vals[10]; 
+        int qtd = separar_tokens_seguro(strCols, cols, 10);
+        int qtdV = separar_tokens_seguro(strVals, vals, 10);
 
-            if(contador == 0) cmd.dadosTipoDePet->codigo = atoi_limpo(limpo);
-            if(contador == 1) limpar_string(cmd.dadosTipoDePet->nome, limpo); // Copia o nome
-            
-            contador++;
+        if (qtd != qtdV) { free(cmd.dadosTipoDePet); return 0; } 
+
+        for (int i = 0; i < qtd; i++) {
+            if (strcasecmp(cols[i], "codigo") == 0) 
+                cmd.dadosTipoDePet->codigo = atoi_limpo(vals[i]);
+            else if (strcasecmp(cols[i], "descricao") == 0 || strcasecmp(cols[i], "nome") == 0)
+                limpar_string(cmd.dadosTipoDePet->nome, vals[i]);
         }
 
-        // ERRO
-        if(contador < 1) {
-            free(cmd.dadosTipoDePet);
-            return 0; 
-        }
-    } else { // UPDATE SELECT DELETE
+    } else { // UPDATE / DELETE / SELECT (Usa buscar_valor)
         cmd.dadosTipoDePet = (tipoPet *)malloc(sizeof(tipoPet));
         cmd.dadosTipoDePet->codigo = -1;
         strcpy(cmd.dadosTipoDePet->nome, "");
 
         char buffer[300];
-        
-        // Lógica do update (set)
+
+        // Lógica do UPDATE
         if(operacao == 3) {
-            char *ptrSet = strstr(linha, "set");
+            char *ptrSet = strstr(linha, "set"); 
+            if(!ptrSet) ptrSet = strstr(linha, "SET"); 
 
             if(ptrSet && (buscar_valor(ptrSet, "nome", buffer) || buscar_valor(ptrSet, "descricao", buffer))) {
                 limpar_string(cmd.dadosTipoDePet->nome, buffer);
-            } else {
-                free(cmd.dadosTipoDePet);
-                return 0;
             }
         }
 
-        // Lógica do where (comum a update, select, remove)
+        // Lógica do WHERE
         char *ptrWhere = strstr(linha, "where");
+        if(!ptrWhere) ptrWhere = strstr(linha, "WHERE");
+
         if(ptrWhere) {
             if(buscar_valor(ptrWhere, "codigo", buffer)) {
                 cmd.dadosTipoDePet->codigo = atoi_limpo(buffer);
                 strcpy(cmd.tipoFiltragem ,"codigo");
-            }else if (buscar_valor(ptrWhere, "nome", buffer) || buscar_valor(ptrWhere, "descricao", buffer)) {
+            } else if (buscar_valor(ptrWhere, "nome", buffer) || buscar_valor(ptrWhere, "descricao", buffer)) {
                 strcpy(cmd.dadosTipoDePet->nome ,buffer);
                 strcpy(cmd.tipoFiltragem ,"nome");
             }
         }
 
-        // Lógica ordenação
+        // Lógica ORDER BY
         if(operacao == 4) {
-            char *ptrOrder = strstr(linha, "order");
-            if(ptrOrder && strstr(ptrOrder, "by")) {
-                if(strstr(ptrOrder, "descricao") || strstr(ptrOrder, "nome")) { 
-                    strcpy(cmd.criterioOrdenacao, "nome");
-                } else if(strstr(ptrOrder, "codigo")) {
-                    strcpy(cmd.criterioOrdenacao, "codigo");
-                }
-            }
+            if(strstr(linha, "descricao") || strstr(linha, "nome")) strcpy(cmd.criterioOrdenacao, "nome");
+            else if(strstr(linha, "codigo")) strcpy(cmd.criterioOrdenacao, "codigo");
         }
-
     }
     AddFilaTipoPet(fila, cmd);
     return 1;
@@ -276,57 +309,44 @@ int processar_pessoa(char *linha, int operacao, NoFilaPessoa **fila) {
     comandoPessoa cmd;
     cmd.operacao = operacao;
     cmd.dadosPessoa = NULL;
-
     strcpy(cmd.tipoFiltragem, "");
     strcpy(cmd.criterioOrdenacao, "");
-    
-    int contador = 0;
 
-    if (operacao == 1) { // INSERT
+    if (operacao == 1) { // INSERT DINÂMICO
         cmd.dadosPessoa = (pessoa *)malloc(sizeof(pessoa));
-        strcpy(cmd.dadosPessoa->endereco, "N/A");
-        strcpy(cmd.dadosPessoa->dataNascimento, "00/00/0000");
-        strcpy(cmd.dadosPessoa->fone, "0000-0000");
+        // Defaults
+        cmd.dadosPessoa->codigo = 0;
+        strcpy(cmd.dadosPessoa->nome, "");
+        strcpy(cmd.dadosPessoa->fone, "");
+        strcpy(cmd.dadosPessoa->endereco, "");
+        strcpy(cmd.dadosPessoa->dataNascimento, "");
 
-        char *ptrValues = strstr(linha, "values");
+        char strCols[300] = {0}, strVals[300] = {0};
         
-        if(!ptrValues) {
-            free(cmd.dadosPessoa);
-            return 0; 
-        } 
-
-        char *valStart = strchr(ptrValues, '(');
-        
-        if(!ptrValues) {
-            free(cmd.dadosPessoa);
-            return 0; 
-        } 
-
-        char *cursor_atual = valStart + 1;
-        char *val;
-        int contador = 0;
-        
-        while ((val = extrair_campo(&cursor_atual)) != NULL) {
-            char limpo[300];
-            limpar_string(limpo, val);
-
-            switch(contador) {
-                case 0: cmd.dadosPessoa->codigo = atoi_limpo(limpo); break;
-                case 1: limpar_string(cmd.dadosPessoa->nome, limpo); break;
-                case 2: limpar_string(cmd.dadosPessoa->fone, limpo); break;
-                case 3: limpar_string(cmd.dadosPessoa->endereco, limpo); break;
-                case 4: limpar_string(cmd.dadosPessoa->dataNascimento, limpo); break;
-            }
-            
-            contador++;
+        if (!separar_colunas_valores(linha, strCols, strVals)) {
+            free(cmd.dadosPessoa); return 0;
         }
 
-        if (contador < 2) {
-            free(cmd.dadosPessoa);
-            return 0;
+        char *cols[10]; char *vals[10];
+        int qtd = separar_tokens_seguro(strCols, cols, 10);
+        int qtdV = separar_tokens_seguro(strVals, vals, 10);
+
+        if (qtd != qtdV) { free(cmd.dadosPessoa); return 0; }
+
+        for (int i = 0; i < qtd; i++) {
+            if (strcasecmp(cols[i], "codigo") == 0)
+                cmd.dadosPessoa->codigo = atoi_limpo(vals[i]);
+            else if (strcasecmp(cols[i], "nome") == 0)
+                limpar_string(cmd.dadosPessoa->nome, vals[i]);
+            else if (strcasecmp(cols[i], "fone") == 0 || strcasecmp(cols[i], "telefone") == 0)
+                limpar_string(cmd.dadosPessoa->fone, vals[i]); 
+            else if (strcasecmp(cols[i], "endereco") == 0)
+                limpar_string(cmd.dadosPessoa->endereco, vals[i]);
+            else if (strcasecmp(cols[i], "data_nascimento") == 0 || strcasecmp(cols[i], "data") == 0)
+                limpar_string(cmd.dadosPessoa->dataNascimento, vals[i]);
         }
+
     } else { // SELECT UPDATE REMOVE 
-
         cmd.dadosPessoa = (pessoa *)malloc(sizeof(pessoa));
         cmd.dadosPessoa->codigo = -1;
         strcpy(cmd.dadosPessoa->fone, "");
@@ -336,31 +356,21 @@ int processar_pessoa(char *linha, int operacao, NoFilaPessoa **fila) {
 
         char buffer[300];
 
-        // update (set)
+        // SET
         if(operacao == 3) {
             char *ptrSet = strstr(linha, "set");
+            if(!ptrSet) ptrSet = strstr(linha, "SET");
             if(ptrSet) {
-                if(buscar_valor(ptrSet, "nome", buffer)) {
-                    strcpy(cmd.dadosPessoa->nome, buffer);
-                }
-
-                if(buscar_valor(ptrSet, "fone", buffer)) {
-                    strcpy(cmd.dadosPessoa->fone, buffer);
-                }
-                if(buscar_valor(ptrSet, "endereco", buffer)) {
-                    strcpy(cmd.dadosPessoa->endereco, buffer);
-                }
-                if(buscar_valor(ptrSet, "data_nascimento", buffer)) {
-                    strcpy(cmd.dadosPessoa->dataNascimento, buffer);
-                }
-            } else {
-                free(cmd.dadosPessoa);
-                return 0;
+                if(buscar_valor(ptrSet, "nome", buffer)) strcpy(cmd.dadosPessoa->nome, buffer);
+                if(buscar_valor(ptrSet, "fone", buffer)) strcpy(cmd.dadosPessoa->fone, buffer);
+                if(buscar_valor(ptrSet, "endereco", buffer)) strcpy(cmd.dadosPessoa->endereco, buffer);
+                if(buscar_valor(ptrSet, "data_nascimento", buffer)) strcpy(cmd.dadosPessoa->dataNascimento, buffer);
             }
         }
 
-        // where
+        // WHERE
         char *ptrWhere = strstr(linha, "where");
+        if(!ptrWhere) ptrWhere = strstr(linha, "WHERE");
         if(ptrWhere) {
             if(buscar_valor(ptrWhere, "codigo", buffer)) {
                 cmd.dadosPessoa->codigo = atoi_limpo(buffer);
@@ -377,84 +387,56 @@ int processar_pessoa(char *linha, int operacao, NoFilaPessoa **fila) {
             }
         }
 
-        // Ordenação
+        // ORDER
         if(operacao == 4) {
-            char *ptrOrder = strstr(linha, "order");
-            if(ptrOrder) {
-                char *ptrBy = strstr(ptrOrder, "by");
-                if(ptrBy) {
-                    if(strstr(ptrBy, "nome")) {
-                        strcpy(cmd.criterioOrdenacao, "nome");
-                    }
-                    else if(strstr(ptrBy, "data")) { 
-                        strcpy(cmd.criterioOrdenacao, "data");
-                    }
-                    else if(strstr(ptrBy, "fone")) {
-                        strcpy(cmd.criterioOrdenacao, "fone");
-                    } else if(strstr(ptrBy, "codigo")) {
-                        strcpy(cmd.criterioOrdenacao, "codigo");
-                    }
-                }
-            }
+             if(strstr(linha, "nome")) strcpy(cmd.criterioOrdenacao, "nome");
+             else if(strstr(linha, "data")) strcpy(cmd.criterioOrdenacao, "data");
+             else if(strstr(linha, "fone")) strcpy(cmd.criterioOrdenacao, "fone");
+             else if(strstr(linha, "codigo")) strcpy(cmd.criterioOrdenacao, "codigo");
         }
-
     } 
-
-
     AddFilaPessoa(fila, cmd);
-    return 1; // SUCESSO
+    return 1;
 }
 
 int processar_pet(char *linha, int operacao, NoFilaPet **fila) {
     comandoPet cmd;
     cmd.operacao = operacao;
     cmd.dadosPet = NULL;
-
     strcpy(cmd.tipoFiltragem, "");
     strcpy(cmd.criterioOrdenacao, "");
-    
-    int contador = 0;
 
-    if (operacao == 1) { // INSERT
+    if (operacao == 1) { // INSERT DINÂMICO
         cmd.dadosPet = (pet *)malloc(sizeof(pet));
+        cmd.dadosPet->codigo = 0;
+        cmd.dadosPet->codigo_pes = 0;
+        cmd.dadosPet->codigo_tipo = 0;
+        strcpy(cmd.dadosPet->nome, "");
+
+        char strCols[300] = {0}, strVals[300] = {0};
         
-        char *ptrValues = strstr(linha, "values");
-        if(!ptrValues) {
-            free(cmd.dadosPet);
-            return 0; 
-        } 
-
-        char *valStart = strchr(ptrValues, '(');
-        if(!ptrValues) {
-            free(cmd.dadosPet);
-            return 0; 
-        } 
-
-        char *cursor_atual = valStart + 1;
-        char *val;
-        int contador = 0;
-        
-        while ((val = extrair_campo(&cursor_atual)) != NULL) {
-            char limpo[300];
-            limpar_string(limpo, val);
-
-            switch(contador) {
-                case 0: cmd.dadosPet->codigo = atoi_limpo(limpo); break;
-                case 1: cmd.dadosPet->codigo_pes = atoi_limpo(limpo); break;
-                case 2: limpar_string(cmd.dadosPet->nome, limpo); break;
-                case 3: cmd.dadosPet->codigo_tipo = atoi_limpo(limpo); break;
-            }
-            
-            contador++;
+        if (!separar_colunas_valores(linha, strCols, strVals)) {
+            free(cmd.dadosPet); return 0;
         }
-        
 
-        if (contador < 4) {
-            free(cmd.dadosPet);
-            return 0;
+        char *cols[10]; char *vals[10];
+        int qtd = separar_tokens_seguro(strCols, cols, 10);
+        int qtdV = separar_tokens_seguro(strVals, vals, 10);
+
+        if (qtd != qtdV) { free(cmd.dadosPet); return 0; }
+
+        for (int i = 0; i < qtd; i++) {
+            if (strcasecmp(cols[i], "codigo") == 0)
+                cmd.dadosPet->codigo = atoi_limpo(vals[i]);
+            else if (strcasecmp(cols[i], "codigo_cli") == 0 || strcasecmp(cols[i], "codigo_pes") == 0 || strcasecmp(cols[i], "dono") == 0)
+                cmd.dadosPet->codigo_pes = atoi_limpo(vals[i]);
+            else if (strcasecmp(cols[i], "nome") == 0)
+                limpar_string(cmd.dadosPet->nome, vals[i]);
+            else if (strcasecmp(cols[i], "codigo_tipo") == 0 || strcasecmp(cols[i], "tipo") == 0)
+                cmd.dadosPet->codigo_tipo = atoi_limpo(vals[i]);
         }
+
     } else { // SELECT UPDATE REMOVER
-
         cmd.dadosPet = (pet *)malloc(sizeof(pet));
         cmd.dadosPet->codigo = -1;
         cmd.dadosPet->codigo_pes = -1;
@@ -463,27 +445,20 @@ int processar_pet(char *linha, int operacao, NoFilaPet **fila) {
 
         char buffer[300];
 
-        // update (set)
+        // SET
         if(operacao == 3) {
             char *ptrSet = strstr(linha, "set");
-
+            if(!ptrSet) ptrSet = strstr(linha, "SET");
             if(ptrSet) {
-                if(buscar_valor(ptrSet, "nome", buffer)) {
-                    strcpy(cmd.dadosPet->nome, buffer);
-                }
-                if(buscar_valor(ptrSet, "codigo_pes", buffer)) {
-                    cmd.dadosPet->codigo_pes = atoi(buffer);
-                }
-                if(buscar_valor(ptrSet, "codigo_tipo", buffer)) { cmd.dadosPet->codigo_tipo = atoi(buffer);
-                }
-            } else {
-                free(cmd.dadosPet);
-                return 0;
+                if(buscar_valor(ptrSet, "nome", buffer)) strcpy(cmd.dadosPet->nome, buffer);
+                if(buscar_valor(ptrSet, "codigo_pes", buffer)) cmd.dadosPet->codigo_pes = atoi(buffer);
+                if(buscar_valor(ptrSet, "codigo_tipo", buffer)) cmd.dadosPet->codigo_tipo = atoi(buffer);
             }
         }
 
-        // Where
+        // WHERE
         char *ptrWhere = strstr(linha, "where");
+        if(!ptrWhere) ptrWhere = strstr(linha, "WHERE");
         if(ptrWhere) {
             if(buscar_valor(ptrWhere, "codigo_pes", buffer)) {
                 cmd.dadosPet->codigo_pes = atoi_limpo(buffer);
@@ -500,32 +475,17 @@ int processar_pet(char *linha, int operacao, NoFilaPet **fila) {
             }
         }
 
-        // Ordenacao
+        // ORDER
         if(operacao == 4) {
-            char *ptrOrder = strstr(linha, "order");
-            if(ptrOrder) {
-                char *ptrBy = strstr(ptrOrder, "by");
-                if(ptrBy) {
-                    if(strstr(ptrBy, "nome")) {
-                        strcpy(cmd.criterioOrdenacao, "nome");
-                    } else if(strstr(ptrBy, "codigo_pes")) {
-                        strcpy(cmd.criterioOrdenacao, "codigo_pes");
-                    } else if(strstr(ptrBy, "codigo_tipo")){ 
-                        strcpy(cmd.criterioOrdenacao, "codigo_tipo");
-                    } else if(strstr(ptrBy, "codigo")) {
-                        strcpy(cmd.criterioOrdenacao, "codigo");
-                    }
-                }
-
-            }
+            if(strstr(linha, "nome")) strcpy(cmd.criterioOrdenacao, "nome");
+            else if(strstr(linha, "codigo_pes")) strcpy(cmd.criterioOrdenacao, "codigo_pes");
+            else if(strstr(linha, "codigo_tipo")) strcpy(cmd.criterioOrdenacao, "codigo_tipo");
+            else if(strstr(linha, "codigo")) strcpy(cmd.criterioOrdenacao, "codigo");
         }
-        
-
     }
 
-
     AddFilaPet(fila, cmd);
-    return 1; // SUCESSO
+    return 1; 
 }
 
 // =================================================================================

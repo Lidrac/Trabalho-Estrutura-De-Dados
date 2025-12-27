@@ -25,7 +25,6 @@
 //         printf("4. A fila tem itens. Imprimindo agora:\n");
 //         imprimir_fila(&minhaFila);
 //     }
-
 //     printf("5. Fim do programa.\n");
 //     return 0;
 // }
