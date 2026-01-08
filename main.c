@@ -1159,98 +1159,140 @@ void finalizar(NoPessoa **iniPes, NoPet **iniPet, NoTipoDePet **iniTipoDePet) {
     finalizarListaDeTiposDePet(iniTipoDePet);
 }
 
-void processarFilaTiposDePets(NoFilaTipoPet *fila, NoTipoDePet **iniTipoDePet, NoPet **iniPet) {
-    while(fila) {
-        int op = fila->info.operacao;
+// === FUNCOES PARA PROCESSAR UM ITEM POR VEZ  ===
+void executarPessoa(NoFilaPessoa **fila, NoPessoa **iniPes, NoPet **iniPet) {
+    if (*fila == NULL) return; // Fila vazia
 
-        switch(op) {
-            case 1:
-               inserirTipoDePet(iniTipoDePet, fila->info.dadosTipoDePet);
-               break;
-            case 2:
-               removerTipoDePetPorCriterio(iniTipoDePet, iniPet, fila->info);
+    NoFilaPessoa *atual = *fila;
+    int op = atual->info.operacao;
 
-               if(fila->info.dadosTipoDePet) free(fila->info.dadosTipoDePet);
-               break;
-            case 3:
-               alterarTipoDePetPorCriterio(iniTipoDePet, iniPet, fila->info);
-               // Liberar o ponteiro de novosDados
-               if(fila->info.dadosTipoDePet) free(fila->info.dadosTipoDePet);
-               break;
-            case 4:
-               executarSelectTipo(*iniTipoDePet, fila->info);
-
-               if(fila->info.dadosTipoDePet) free(fila->info.dadosTipoDePet);
-               break;
-        }
-
-        NoFilaTipoPet *temp = fila;
-        fila = (*fila).prox;
-        free(temp);
+    // Executa a operacao
+    switch(op) {
+        case 1: inserirPessoa(iniPes, atual->info.dadosPessoa); break;
+        case 2: removerPessoaPorCriterio(iniPes, iniPet, atual->info); 
+                if(atual->info.dadosPessoa) free(atual->info.dadosPessoa); break;
+        case 3: alterarPessoaPorCriterio(iniPes, iniPet, atual->info);
+                if(atual->info.dadosPessoa) free(atual->info.dadosPessoa); break;
+        case 4: executarSelectPessoa(*iniPes, atual->info);
+                if(atual->info.dadosPessoa) free(atual->info.dadosPessoa); break;
     }
+
+    // Remove da fila e anda
+    *fila = atual->prox;
+    free(atual);
 }
 
-void processarFilaPessoas(NoFilaPessoa *fila, NoPessoa **iniPes, NoPet **iniPet) {
-    while(fila) {
-        int op = fila->info.operacao;
+void executarTipo(NoFilaTipoPet **fila, NoTipoDePet **iniTipo, NoPet **iniPet) {
+    if (*fila == NULL) return;
 
-        switch(op) {
-            case 1:
-               inserirPessoa(iniPes, fila->info.dadosPessoa);
-               break;
-            case 2:
-               removerPessoaPorCriterio(iniPes, iniPet, fila->info);
+    NoFilaTipoPet *atual = *fila;
+    int op = atual->info.operacao;
 
-               if(fila->info.dadosPessoa) free(fila->info.dadosPessoa);
-               break;
-            case 3:
-                alterarPessoaPorCriterio(iniPes,iniPet, fila->info);
-                if(fila->info.dadosPessoa) free(fila->info.dadosPessoa);    
-               break;
-            case 4:
-               executarSelectPessoa(*iniPes, fila->info);
-
-               if(fila->info.dadosPessoa) free(fila->info.dadosPessoa);
-               break;
-        }
-
-        NoFilaPessoa *temp = fila;
-        fila = (*fila).prox;
-        free(temp);
+    switch(op) {
+        case 1: inserirTipoDePet(iniTipo, atual->info.dadosTipoDePet); break;
+        case 2: removerTipoDePetPorCriterio(iniTipo, iniPet, atual->info);
+                if(atual->info.dadosTipoDePet) free(atual->info.dadosTipoDePet); break;
+        case 3: alterarTipoDePetPorCriterio(iniTipo, iniPet, atual->info);
+                if(atual->info.dadosTipoDePet) free(atual->info.dadosTipoDePet); break;
+        case 4: executarSelectTipo(*iniTipo, atual->info);
+                if(atual->info.dadosTipoDePet) free(atual->info.dadosTipoDePet); break;
     }
+
+    *fila = atual->prox;
+    free(atual);
 }
 
-void processarFilaPets(NoFilaPet *fila, NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipoDePet) {
-    while(fila) {
-        int op = fila->info.operacao;
+void executarPet(NoFilaPet **fila, NoPet **iniPet, NoPessoa **iniPes, NoTipoDePet **iniTipo) {
+    if (*fila == NULL) return;
 
-        switch(op) {
-            case 1:
-               inserirPet(iniPet, iniPes, iniTipoDePet, fila->info.dadosPet);
-               break;
-            case 2:
-               removerPetPorCriterio(iniPet, fila->info);
+    NoFilaPet *atual = *fila;
+    int op = atual->info.operacao;
 
-               if(fila->info.dadosPet) free(fila->info.dadosPet);
-               break;
-
-            case 3:
-                alterarPetPorCriterio(iniPet, iniPes, iniTipoDePet, fila->info);
-                
-                if(fila->info.dadosPet) free(fila->info.dadosPet);
-                break;
-               
-            case 4:
-               executarSelectPet(*iniPet, fila->info);
-
-               if(fila->info.dadosPet) free(fila->info.dadosPet);
-               break;
-        }
-
-        NoFilaPet *temp = fila;
-        fila = (*fila).prox;
-        free(temp);
+    switch(op) {
+        case 1: inserirPet(iniPet, iniPes, iniTipo, atual->info.dadosPet); break;
+        case 2: removerPetPorCriterio(iniPet, atual->info);
+                if(atual->info.dadosPet) free(atual->info.dadosPet); break;
+        case 3: alterarPetPorCriterio(iniPet, iniPes, iniTipo, atual->info);
+                if(atual->info.dadosPet) free(atual->info.dadosPet); break;
+        case 4: executarSelectPet(*iniPet, atual->info);
+                if(atual->info.dadosPet) free(atual->info.dadosPet); break;
     }
+
+    *fila = atual->prox;
+    free(atual);
+}
+
+// === FUNCAO PRINCIPAL ===
+void processarNovosComandos(long *cursorTXT, NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos) {
+    
+    // Cria as filas vazias
+    NoFilaPessoa *filaPes = NULL;
+    NoFilaPet *filaPet = NULL;
+    NoFilaTipoPet *filaTipo = NULL;
+    Fila *filaBruta = criar_fila();
+
+    // Lê o arquivo
+    ler_arquivo(&filaBruta, "comandos.txt", cursorTXT);
+
+    if (filaBruta->ini == NULL) {
+        printf("\n[INFO] Nao ha novos comandos.\n");
+        free(filaBruta);
+        return;
+    }
+
+    printf("\n[SISTEMA] Distribuindo comandos nas filas...\n");
+
+    if (DistribuirComandos(filaBruta, &filaPes, &filaPet, &filaTipo) == 0) {
+        printf("[FALHA] Processamento cancelado devido a erro de sintaxe.\n");
+        // Limpa a fila bruta
+        while(filaBruta->ini) {
+            NoComando *lixo = filaBruta->ini;
+            filaBruta->ini = lixo->prox;
+            free(lixo);
+        }
+        free(filaBruta);
+        return;
+    }
+
+    printf("[SISTEMA] Executando filas em ordem sincronizada...\n");
+
+    NoComando *roteiro = filaBruta->ini;
+    
+    while(roteiro) {
+        char *linha = roteiro->info.linhacompleta;
+        int op = 0;
+        
+        // Verifica se é comando válido
+        if (comeca_com(linha, "insert")) op = 1;
+        else if (comeca_com(linha, "delete")) op = 2;
+        else if (comeca_com(linha, "update")) op = 3;
+        else if (comeca_com(linha, "select")) op = 4;
+
+        if (op > 0) {
+            // Verifica de qual tipo é e consome UM item da fila correspondente
+            if (encontrarInicioKeyword(linha, "tipo_pet")) {
+                executarTipo(&filaTipo, listaTipos, listaPets);
+            } 
+            else if (encontrarInicioKeyword(linha, "pessoa")) {
+                executarPessoa(&filaPes, listaPessoas, listaPets);
+            } 
+            else if (encontrarInicioKeyword(linha, "pet")) {
+                executarPet(&filaPet, listaPets, listaPessoas, listaTipos);
+            }
+        }
+        
+        roteiro = roteiro->prox;
+    }
+
+    // Limpando a fila bruta
+    while(filaBruta->ini) {
+        NoComando *lixo = filaBruta->ini;
+        filaBruta->ini = lixo->prox;
+        free(lixo);
+    }
+    free(filaBruta);
+    
+    printf("[SUCESSO] Todos os comandos processados.\n");
 }
 
 void adicionarComandoNoTXT() {
@@ -1267,36 +1309,6 @@ void adicionarComandoNoTXT() {
     
     fclose(arq);
     printf("[SUCESSO] Comando gravado.\n");
-}
-
-void processarNovosComandos(long *cursorTXT, NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos) {
-    
-    //Cria fila vazia
-    NoFilaPessoa *filaPes = NULL;
-    NoFilaPet *filaPet = NULL;
-    NoFilaTipoPet *filaTipo = NULL;
-    Fila *filaBruta = criar_fila();
-
-    // Lê APENAS O QUE É NOVO (usando o cursor)
-    ler_arquivo(&filaBruta, "comandos.txt", cursorTXT);
-
-    if (filaBruta->ini == NULL) {
-        printf("\n[INFO] Nao ha novos comandos no arquivo para processar.\n");
-    } else {
-        printf("\n[SISTEMA] Processando %d novos comandos...\n", filaBruta->tam);
-        
-        // Distribui e Executa (usando inserirPessoa, inserirPet...)
-        DistribuirComandos(filaBruta, &filaPes, &filaPet, &filaTipo);
-        
-        processarFilaPessoas(filaPes, listaPessoas, listaPets);
-        processarFilaTiposDePets(filaTipo, listaTipos, listaPets);
-        processarFilaPets(filaPet, listaPets, listaPessoas, listaTipos);
-
-        // O salvamento no binário já acontece dentro das funções inserir...
-        printf("[SUCESSO] Novos comandos executados!\n");
-    }
-    
-    free(filaBruta);
 }
 
 void exibir(NoPessoa **listaPessoas, NoPet **listaPets, NoTipoDePet **listaTipos) {

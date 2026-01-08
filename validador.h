@@ -8,7 +8,7 @@
 
 //
 
-void DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **FilaPet, NoFilaTipoPet **FilaTipo);
+int DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **FilaPet, NoFilaTipoPet **FilaTipo);
 char* trim(char *str);
 void limpar_string(char *destino, char *origem);
 int comeca_com(char *linha, char *termo);

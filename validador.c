@@ -500,11 +500,12 @@ int processar_pet(char *linha, int operacao, NoFilaPet **fila) {
 // FUNÇÃO PRINCIPAL
 // =================================================================================
 
-void DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **FilaPet, NoFilaTipoPet **FilaTipo) {
-    if (!FilaBruta || !FilaBruta->ini) return;
+int DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **FilaPet, NoFilaTipoPet **FilaTipo) {
+    if (!FilaBruta || !FilaBruta->ini) return 1;
 
-    while (FilaBruta->ini) {
-        NoComando *atual = FilaBruta->ini;
+    NoComando *atual = FilaBruta->ini;
+
+    while (atual) {
         char linha[300];
         strcpy(linha, atual->info.linhacompleta);
 
@@ -516,8 +517,7 @@ void DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **
         else if (comeca_com(linha, "update")) op = 3;
         else if (comeca_com(linha, "select")) op = 4;
 
-
-        int sucesso = 1; // Assume sucesso
+        int sucesso = 1; 
 
         if (op > 0) {
             int tabelaEncontrada = 0;
@@ -535,35 +535,19 @@ void DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **
 
             if(!tabelaEncontrada) sucesso = 0;
         } else {
-             // Linha não vazia que não é comando
             if(strlen(trim(linha)) > 0) sucesso = 0;
         }
 
-        // --- SISTEMA DE ERRO ---
         if (sucesso == 0) {
             printf("\n[ERRO CRITICO] Erro de sintaxe no comando %d: %s\n", id_comando, linha);
-            printf("Cancelando importacao...\n");
             
-            // Limpa o resto do arquivo da memória
-            while(FilaBruta->ini) {
-                NoComando *lixo = FilaBruta->ini;
-                FilaBruta->ini = lixo->prox;
-                free(lixo);
-            }
-            FilaBruta->fim = NULL;
-            FilaBruta->tam = 0;
-
-            // Limpa o que já tinha sido aceito
             limpeza(FilaPessoa, FilaPet, FilaTipo);
-            
-            return; // Sai da função
+            return 0; 
         }
 
-        // Avança a fila
-        FilaBruta->ini = atual->prox;
-        if (!FilaBruta->ini) FilaBruta->fim = NULL;
-        FilaBruta->tam--;
-        free(atual);
+        // Apenas avanca o ponteiro
+        atual = atual->prox;
     }
+    return 1;
 }
 
