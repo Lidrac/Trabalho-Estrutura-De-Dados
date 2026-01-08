@@ -227,7 +227,10 @@ void inserirNaArvorePessoa(NoArvorePessoa **raiz, pessoa *p, char *criterioOrden
                 deveIrParaEsquerda = 1;
             }
         } else if(strcasecmp(criterioOrdenacao, "data") == 0) {
-            if (strcasecmp(p->dataNascimento, (*raiz)->p->dataNascimento)) {
+            long dataPessoa = calcularValorData(p->dataNascimento);
+            long dataRaiz = calcularValorData((*raiz)->p->dataNascimento);
+            
+            if (dataPessoa < dataRaiz) {
                 deveIrParaEsquerda = 1;
             }
         } else if(strcasecmp(criterioOrdenacao, "endereco") == 0) {

@@ -12,7 +12,9 @@ void DistribuirComandos(Fila *FilaBruta, NoFilaPessoa **FilaPessoa, NoFilaPet **
 char* trim(char *str);
 void limpar_string(char *destino, char *origem);
 int comeca_com(char *linha, char *termo);
-char* extrair_campo(char **cursor);
+char* encontrarInicioKeyword(char *linha, char *keyword);
+int buscar_valor(char *linha, char *nomeCampo, char *destino);
+long calcularValorData(char *data);
 void AddFilaPessoa(NoFilaPessoa **fila, comandoPessoa cmd);
 void AddFilaPet(NoFilaPet **fila, comandoPet cmd);
 void AddFilaTipoPet(NoFilaTipoPet **fila, comandoTipoPet cmd);

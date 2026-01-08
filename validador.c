@@ -65,6 +65,16 @@ char* encontrarInicioKeyword(char *linha, char *keyword) {
     return linha + offset;
 }
 
+long calcularValorData(char *data) {
+    if (data == NULL || strlen(data) < 10) return 0;
+    
+    int dia = atoi(data);
+    int mes = atoi(data + 3);
+    int ano = atoi(data + 6);
+    
+    return (ano * 10000) + (mes * 100) + dia;
+}
+
 // Função pra remover aspas, por que a atoi não remove
 int atoi_limpo(char *str) {
     char temp[50];
